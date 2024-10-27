@@ -8,7 +8,7 @@ const ThEInGliscTheme = {
     accent: '#03dac4',   // Colore secondario
     background: '#ffffff', // Colore di sfondo
     surface: '#ffffff',   // Colore della superficie
-    text: '#000000',      // Colore del testo
+    text: '#0000ff',      // Colore del testo
   },
 };
 

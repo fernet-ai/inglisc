@@ -1,11 +1,13 @@
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View, Alert } from 'react-native';
 import React, { useState } from 'react';
-import { Button, TextInput } from 'react-native-paper';
+import { Button, TextInput , useTheme, Icon, MD3Colors } from 'react-native-paper';
 import { createLobby, joinLobby } from '../services/LobbyService';
 
 export default function HomeScreen({ navigation }) {
   
+  const theme = useTheme(); 
+
   const [lobbyCodeCreate, setLobbyCodeCreate] = useState('');
   const [lobbyCodeJoin, setLobbyCodeJoin] = useState('');
   const [nickname, setNickname] = useState('');
@@ -42,9 +44,9 @@ export default function HomeScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
-      
-      <Text style={styles.title}>🇬🇧 ThE InGliSc GaMe 🇬🇧</Text>
-
+     <Text style={[styles.title, { color: theme.colors.text }]}>
+        🇬🇧 ThE InGliSc GaMe 🇬🇧
+      </Text>
       {/* Input per il nickname */}
       <TextInput
         style={styles.inputContainer}
@@ -77,6 +79,13 @@ export default function HomeScreen({ navigation }) {
         <Button mode="contained" onPress={handleJoinLobby} >
             Join
         </Button>
+
+
+        {/* <Icon
+          source="format-page-break"
+          color={MD3Colors.error50}
+          size={20}
+        /> */}
       </View>
 
       <StatusBar style="auto" />

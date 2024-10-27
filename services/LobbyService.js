@@ -1,4 +1,8 @@
-const SERVER_URL = 'http://192.168.1.105:3000';
+import Constants from 'expo-constants';
+
+const SERVER_URL = Constants.expoConfig.extra.SERVER_URL;
+
+
 
 // Creazione di una nuova lobby
 export const createLobby = (lobbyCode) => {
