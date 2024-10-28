@@ -1,6 +1,6 @@
 import Constants from 'expo-constants';
 
-const SERVER_URL = Constants.expoConfig.extra.SERVER_URL;
+const SERVER_URL = "http://localhost:3000" || Constants.expoConfig.extra.SERVER_URL;
 
 
 

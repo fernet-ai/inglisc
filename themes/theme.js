@@ -1,14 +1,21 @@
-import { DefaultTheme } from 'react-native-paper';
+import { DefaultTheme, configureFonts } from 'react-native-paper';
+
+const fontConfig = {
+  fontFamily: 'monospace'
+};
+
 
 const ThEInGliscTheme = {
   ...DefaultTheme,
+  fonts: configureFonts({config: fontConfig}),
   colors: {
     ...DefaultTheme.colors,
-    primary: '#6200ee',  // Colore primario
-    accent: '#03dac4',   // Colore secondario
-    background: '#ffffff', // Colore di sfondo
-    surface: '#ffffff',   // Colore della superficie
-    text: '#0000ff',      // Colore del testo
+    primary: '#0D92F4',  
+    secondary: '#C8102E', 
+    accent: '#F95454',   
+    background: '#F4F6FF', 
+    surface: '#ffffff',   
+    text: '#0000ff', 
   },
 };
 

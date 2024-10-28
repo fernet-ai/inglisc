@@ -1,16 +1,23 @@
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, Alert } from 'react-native';
+import { StyleSheet, View, Alert, TouchableOpacity, Image, Dimensions } from 'react-native';
 import React, { useState } from 'react';
-import { Button, TextInput , useTheme, Icon, MD3Colors } from 'react-native-paper';
+import { Button ,Text,TextInput, useTheme } from 'react-native-paper';
 import { createLobby, joinLobby } from '../services/LobbyService';
 
 export default function HomeScreen({ navigation }) {
-  
+    
+  // Ottieni larghezza e altezza dello schermo
+  const { width, height } = Dimensions.get('window');
+
+  const fontSizeVW = width * 0.11;
+
   const theme = useTheme(); 
 
   const [lobbyCodeCreate, setLobbyCodeCreate] = useState('');
   const [lobbyCodeJoin, setLobbyCodeJoin] = useState('');
   const [nickname, setNickname] = useState('');
+
+
 
   const handleCreateLobby = () => {
     createLobby(lobbyCodeCreate)
@@ -43,80 +50,131 @@ export default function HomeScreen({ navigation }) {
   };
 
   return (
-    <View style={styles.container}>
-     <Text style={[styles.title, { color: theme.colors.text }]}>
-        🇬🇧 ThE InGliSc GaMe 🇬🇧
-      </Text>
-      {/* Input per il nickname */}
-      <TextInput
-        style={styles.inputContainer}
-        label="Inserisci il tuo nickname"
-        value={nickname}
-        onChangeText={setNickname}
-      />
-
-      {/* Input + Create Lobby */}
-      <View style={styles.inputContainer}>
-        <TextInput
-          style={styles.input}
-          label="Inserisci il codice della lobby"
-          value={lobbyCodeCreate}
-          onChangeText={setLobbyCodeCreate}
-        />
-        <Button mode="contained" onPress={handleCreateLobby}>
-            Crea
-        </Button>
-      </View>
-
-      {/* Input + Join Lobby */}
-      <View style={styles.inputContainer}>
-        <TextInput
-          style={styles.input}
-          label="Inserisci il codice della lobby"
-          value={lobbyCodeJoin}
-          onChangeText={setLobbyCodeJoin}
-        />
-        <Button mode="contained" onPress={handleJoinLobby} >
-            Join
-        </Button>
-
-
-        {/* <Icon
-          source="format-page-break"
-          color={MD3Colors.error50}
-          size={20}
-        /> */}
-      </View>
+    <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
 
       <StatusBar style="auto" />
+
+      <Image
+          source={require('../assets/cover_letters.png')}
+          style={styles.backgroundImage}
+          opacity={0.08} 
+        />
+
+      <View style={styles.titleContainer}>
+        <Text style={{ color: theme.colors.primary, fontSize: fontSizeVW, fontStyle: 'italic' }}>ThE</Text>
+        <Text style={[styles.title, {fontSize: fontSizeVW  }]}>🇬🇧 InGliSc 🇬🇧</Text>
+        <Text style={{ color: theme.colors.accent, fontSize: fontSizeVW, fontStyle: 'italic' }}>GaMe</Text>
+      </View>
+
+
+
+
+      <View style={styles.secondaryContainer}>
+        <TouchableOpacity style={styles.iconButtonView}> 
+          <Image
+            source={require('../assets/book.png')}
+            style={styles.image}
+          />
+           <Text style={{ fontSize: 18  }}>Regolamento</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.iconButtonView}>
+        <Image
+            source={require('../assets/checklist.png')}
+            style={styles.image}
+          />
+          <Text style={{ fontSize: 18  }}>Memo parole</Text>
+        </TouchableOpacity>
+
+      </View>
+
+      
+      <View style={styles.primaryContainer}>
+
+          <TextInput
+             style={styles.item} 
+             mode="outlined"
+            label="Inserisci il tuo nickname"
+            value={nickname}
+            onChangeText={setNickname}
+          />
+
+
+        <Button 
+            disabled={!nickname}
+            style={[styles.item, {backgroundColor: theme.colors.primary}]} 
+            mode="contained" 
+            onPress={handleJoinLobby} >
+            Start the gheim!
+        </Button>
+
+      </View>
+
+
+
+
+
+
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
+
+  backgroundImage: {
+    position: 'absolute', 
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: '100%', 
+    height: '100%',
+    resizeMode: 'cover', 
+  },
+
+  titleContainer: {
+    flex: 5,
+    flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 16,
   },
+
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 20,
+    fontWeight: 'bold'
   },
-  inputContainer: {
+
+
+  primaryContainer: {
+    flex: 3,
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  item: {
+    width: '80%',
+    margin: '2%',
+  },
+
+
+  secondaryContainer: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 20,
-    width: '80%',
+    justifyContent: 'center',
   },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    padding: 10,
-    flex: 1,
-    marginRight: 10,
+
+  iconButtonView: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    margin: '2%'
   },
+
+  image: {
+    width: 60,  
+    height: 60, 
+    resizeMode: 'contain', 
+  },
+  
+
 });
