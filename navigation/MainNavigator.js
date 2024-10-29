@@ -3,7 +3,7 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import HomeScreen from '../screens/HomeScreen';
-// import DetailsScreen from '../screens/DetailsScreen';
+import LobbyScreen from '../screens/LobbyScreen';
 
 const Stack = createStackNavigator();
 
@@ -16,7 +16,7 @@ function MainNavigator() {
           headerShown: false,
         }}>
         <Stack.Screen name="Home" component={HomeScreen} />
-        {/* <Stack.Screen name="Lobbies" component={LobbyScreen} /> */}
+        <Stack.Screen name="Lobbies" component={LobbyScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

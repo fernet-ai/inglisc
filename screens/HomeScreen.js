@@ -2,52 +2,14 @@ import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, View, Alert, TouchableOpacity, Image, Dimensions } from 'react-native';
 import React, { useState } from 'react';
 import { Button ,Text,TextInput, useTheme } from 'react-native-paper';
-import { createLobby, joinLobby } from '../services/LobbyService';
 
 export default function HomeScreen({ navigation }) {
     
-  // Ottieni larghezza e altezza dello schermo
   const { width, height } = Dimensions.get('window');
-
   const fontSizeVW = width * 0.11;
-
   const theme = useTheme(); 
 
-  const [lobbyCodeCreate, setLobbyCodeCreate] = useState('');
-  const [lobbyCodeJoin, setLobbyCodeJoin] = useState('');
   const [nickname, setNickname] = useState('');
-
-
-
-  const handleCreateLobby = () => {
-    createLobby(lobbyCodeCreate)
-      .then((result) => {
-        if (result.status === 'success') {
-          Alert.alert('Lobby Creata', result.message);
-        } else {
-          Alert.alert('Errore', result.message);
-        }
-      })
-      .catch((error) => {
-        console.error('Errore durante la creazione della lobby:', error);
-        Alert.alert('Errore', 'Impossibile creare la lobby.');
-      });
-  };
-
-  const handleJoinLobby = () => {
-    joinLobby(lobbyCodeJoin, nickname)
-      .then((result) => {
-        if (result.status === 'success') {
-          Alert.alert('Successo', `Unito alla lobby. Utenti: ${result.users.join(', ')}`);
-        } else {
-          Alert.alert('Errore', result.message);
-        }
-      })
-      .catch((error) => {
-        console.error("Errore durante l'unione alla lobby:", error);
-        Alert.alert('Errore', 'Impossibile unirsi alla lobby.');
-      });
-  };
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
@@ -104,8 +66,9 @@ export default function HomeScreen({ navigation }) {
             disabled={!nickname}
             style={[styles.item, {backgroundColor: theme.colors.primary}]} 
             mode="contained" 
-            onPress={handleJoinLobby} >
-            Start the gheim!
+            onPress={() => navigation.navigate('Lobbies', { nickname })}
+            >
+            Start gheim!
         </Button>
 
       </View>

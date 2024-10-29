@@ -6,7 +6,7 @@ import ThEInGliscTheme from './themes/theme';
 export default function App() {
   return (
     <PaperProvider theme={ThEInGliscTheme} >
-      <MainNavigator /> 
-    </PaperProvider> 
-    );
+      <MainNavigator />
+    </PaperProvider>
+  );
 }
