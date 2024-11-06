@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { Button, Text, TextInput, useTheme, Avatar, FAB, Dialog, Portal } from 'react-native-paper';
 import { createLobby, joinLobby } from '../services/LobbyService';
-
+import Lobby from '../components/Lobby';
 
 export default function LobbyScreen({ route }) {
 
@@ -66,7 +66,9 @@ export default function LobbyScreen({ route }) {
 			<View style={styles.profileContainer}>
 				<TouchableOpacity style={[styles.profileView, { backgroundColor: theme.colors.primary }]} onPress={showDialog} >
 					<Avatar.Image size={50} source={require('../assets/customSplash.png')} />
-					<Text style={{ color: 'white', fontWeight: "bold", paddingHorizontal: '2%' }}>{nickname}</Text>
+					<Text style={{ color: 'white', fontWeight: "thin" , paddingHorizontal: '2%' }}>
+						Player: <Text style={{ color: 'white', fontWeight: "bold", fontStyle: "italic" }}>{nickname}</Text>
+					</Text>
 				</TouchableOpacity>
 
 			</View>
@@ -74,6 +76,7 @@ export default function LobbyScreen({ route }) {
 
 			<View style={styles.LobbiesContainer}>
 				<Text>Benvenuto nella schermata Lobbies!</Text>
+				<Lobby name={nickname} />
 			</View>
 
 
