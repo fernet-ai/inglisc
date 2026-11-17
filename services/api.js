@@ -38,7 +38,7 @@ function createClient(baseUrl) {
   const normalizeCode = (code) => String(code ?? '').trim().toUpperCase();
   const path = code => `/lobby/${encodeURIComponent(normalizeCode(code))}`;
   return {
-    create: nickname => request('/lobby', { body: { nickname } }),
+    create: (nickname, roundCount = 3) => request('/lobby', { body: { nickname, roundCount } }),
     join: (code, nickname) => request(`${path(code)}/join`, { body: { nickname } }),
     snapshot: (session, signal) => request(path(session.code), { token: session.token, signal }),
     action: (session, action, body = {}) => request(`${path(session.code)}/${action}`, { token: session.token, body }),

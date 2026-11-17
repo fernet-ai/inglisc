@@ -8,15 +8,16 @@ test('frontend API client plays three rounds, rematches and leaves', async () =>
   await new Promise(resolve => server.once('listening', resolve));
   const api = createClient(`http://127.0.0.1:${server.address().port}`);
   try {
-    const host = await api.create('Ada');
+    const host = await api.create('Ada', 6);
     const code = host.snapshot.code;
     const bob = await api.join(code.toLowerCase(), 'Bob');
     const cat = await api.join(code, 'Cat');
     const players = [host, bob, cat].map(p => ({ token: p.token, code, id: p.playerId }));
     await assert.rejects(api.join(code, 'Dan'), { code: 'ROOM_FULL' });
+    assert.equal(host.snapshot.roundCount, 6);
     await api.action(players[0], 'start');
-    for (let round = 0; round < 3; round++) {
-      const master = players[round];
+    for (let round = 0; round < 6; round++) {
+      const master = players[round % 3];
       const guessers = players.filter(p => p !== master);
       let state = (await api.snapshot(master)).snapshot;
       assert.equal(state.phase, 'setup');

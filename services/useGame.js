@@ -121,12 +121,12 @@ export default function useGame() {
     } finally { lock.current = false; setBusy(false); }
   }, [apply, lost]);
 
-  const enter = (code, nickname) => run(async () => {
+  const enter = (code, nickname, roundCount = 3) => run(async () => {
     const normalizedCode = typeof code === 'string' ? code.trim().toUpperCase() : '';
     if (code && !/^[A-Z0-9]{6}$/i.test(normalizedCode)) {
       throw Object.assign(new Error('Il codice lobby deve essere di 6 caratteri: lettere e numeri senza spazi.'), { code: 'INVALID_INPUT' });
     }
-    const data = normalizedCode ? await api.join(normalizedCode, nickname) : await api.create(nickname);
+    const data = normalizedCode ? await api.join(normalizedCode, nickname) : await api.create(nickname, roundCount);
     const s = { code: data.snapshot.code, token: data.token, url: serverUrl };
     // Keep the live session even if persistence fails: the player can still leave.
     current.current = s; revision.current = -1; setSession(s); apply(data.snapshot);

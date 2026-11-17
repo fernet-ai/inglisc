@@ -4,30 +4,35 @@
     "slug": "inglisc",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/custom_icon.png",
-    "userInterfaceStyle": "light",
+    "icon": "./assets/inglisc-icon.png",
+    "userInterfaceStyle": "automatic",
     "splash": {
-      "image": "./assets/custom_splash.png",
+      "image": "./assets/inglisc-splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#F8F6F0"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "icon": "./assets/inglisc-icon.png"
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "foregroundImage": "./assets/inglisc-adaptive-icon.png",
+        "backgroundColor": "#5844C5"
       },
-      "package": "com.fernet.inglisc"
+      "package": "com.fernet.inglisc",
+      "icon": "./assets/inglisc-icon.png"
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/inglisc-favicon.png"
     },
     "extra": {
       "eas": {
         "projectId": "62fc4280-e19d-44e1-a33b-82b0a70a7555"
       }
-    }
+    },
+    "plugins": [
+      "expo-audio"
+    ]
   }
 }
