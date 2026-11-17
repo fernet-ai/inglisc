@@ -10,7 +10,9 @@
     "web": "expo start --web",
     "dev:android": "expo start --android",
     "dev:ios": "expo start --ios",
-    "dev:all": "npx concurrently \"cd ../inglisc-be && npm start\" \"npm run dev\""
+    "dev:all": "npx concurrently \"cd ../inglisc-be && npm start\" \"npm run dev\"",
+    "build:web": "expo export --platform web --output-dir dist",
+    "build:android": "eas build --platform android --profile preview"
   },
   "dependencies": {
     "@expo-google-fonts/roboto": "^0.4.3",
