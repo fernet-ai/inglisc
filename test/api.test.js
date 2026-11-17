@@ -9,6 +9,7 @@ test('frontend API client plays three rounds, rematches and leaves', async () =>
   const api = createClient(`http://127.0.0.1:${server.address().port}`);
   try {
     const host = await api.create('Ada', 6);
+    assert.equal((await api.activeUsers()).activeUsers >= 1, true);
     const code = host.snapshot.code;
     const bob = await api.join(code.toLowerCase(), 'Bob');
     const cat = await api.join(code, 'Cat');

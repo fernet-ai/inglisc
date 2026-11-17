@@ -16,6 +16,7 @@ export default function useGame() {
   const [uncertain, setUncertain] = useState(false);
   const [memo, setMemo] = useState([]);
   const [secret, setSecret] = useState(null);
+  const [activeUsers, setActiveUsers] = useState(0);
   const lock = useRef(false);
   const poll = useRef(null);
   const current = useRef(null);
@@ -102,6 +103,29 @@ export default function useGame() {
     return () => { stopped = true; clearTimeout(timer); if (controller) controller.abort(); sub.remove(); };
   }, [session, refresh]);
 
+  useEffect(() => {
+    let stopped = false;
+    let timer;
+    let active = AppState.currentState === 'active';
+
+    async function tick() {
+      if (stopped || !active) return;
+      try {
+        const data = await api.activeUsers();
+        if (!stopped) setActiveUsers(Number.isInteger(data.activeUsers) ? data.activeUsers : 0);
+      } catch {}
+      if (!stopped && active) timer = setTimeout(tick, 5000);
+    }
+
+    const sub = AppState.addEventListener('change', state => {
+      active = state === 'active';
+      clearTimeout(timer);
+      if (active) tick();
+    });
+    tick();
+    return () => { stopped = true; clearTimeout(timer); sub.remove(); };
+  }, []);
+
   const run = useCallback(async (fn) => {
     if (lock.current) return false;
     lock.current = true; setBusy(true); setError('');
@@ -158,5 +182,5 @@ export default function useGame() {
     if (!memo.some(w => w.prompt === result.prompt && w.text === text)) updateMemo([{ prompt: result.prompt, text }, ...memo]);
   };
   const retry = () => run(async () => { await refresh(current.current); return true; });
-  return { session, snapshot, ready, busy: busy || uncertain, error, setError, enter, action, forget, refresh: retry, memo, saveWord, removeWord: index => updateMemo(memo.filter((_, i) => i !== index)), secret };
+  return { session, snapshot, ready, busy: busy || uncertain, error, setError, enter, action, forget, refresh: retry, memo, saveWord, removeWord: index => updateMemo(memo.filter((_, i) => i !== index)), secret, activeUsers };
 }

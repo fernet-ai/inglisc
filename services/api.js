@@ -42,6 +42,7 @@ function createClient(baseUrl) {
     join: (code, nickname) => request(`${path(code)}/join`, { body: { nickname } }),
     snapshot: (session, signal) => request(path(session.code), { token: session.token, signal }),
     action: (session, action, body = {}) => request(`${path(session.code)}/${action}`, { token: session.token, body }),
+    activeUsers: () => request('/active'),
   };
 }
 module.exports = { createClient };
