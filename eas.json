@@ -11,11 +11,13 @@
     },
     "preview": {
       "distribution": "internal",
-      "android": { "buildType": "apk" }
+      "android": { "buildType": "apk" },
+      "env": { "EXPO_PUBLIC_SERVER_URL": "https://inglisc-be.onrender.com" }
     },
     "production": {
       "autoIncrement": true,
-      "android": { "buildType": "app-bundle" }
+      "android": { "buildType": "app-bundle" },
+      "env": { "EXPO_PUBLIC_SERVER_URL": "https://inglisc-be.onrender.com" }
     }
   },
   "submit": {
