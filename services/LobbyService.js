@@ -1,51 +1,17 @@
 import Constants from 'expo-constants';
+import { Platform } from 'react-native';
+import { createClient } from './api';
 
-const SERVER_URL = "http://localhost:3000" || Constants.expoConfig.extra.SERVER_URL;
+export function getServerUrl() {
+  const explicit = process.env.EXPO_PUBLIC_SERVER_URL || Constants.expoConfig?.extra?.SERVER_URL;
+  if (explicit) return explicit.trim().replace(/\/+$/, '');
+  if (Platform.OS === 'web') return 'http://localhost:3000';
+  if (__DEV__) {
+    const host = Constants.expoConfig?.hostUri?.split(':')[0];
+    if (host && /^(192\.168\.|10\.|172\.(1[6-9]|2\d|3[01])\.)/.test(host)) return `http://${host}:3000`;
+  }
+  return '';
+}
 
-
-
-// Creazione di una nuova lobby
-export const createLobby = (lobbyCode) => {
-  return fetch(`${SERVER_URL}/lobby`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ code: lobbyCode }),
-  })
-    .then((response) => response.json().then((data) => ({ status: response.status, data })))
-    .then(({ status, data }) => {
-      if (status === 201) {
-        return { status: 'success', message: data.message };
-      } else {
-        return { status: 'error', message: data.message };
-      }
-    })
-    .catch((error) => {
-      console.error('Errore durante la creazione della lobby:', error);
-      return { status: 'error', message: 'Impossibile creare la lobby.' };
-    });
-};
-
-// Unisciti ad una lobby esistente
-export const joinLobby = (lobbyCode, nickname) => {
-  return fetch(`${SERVER_URL}/lobby/${lobbyCode}/join`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ nickname }),
-  })
-    .then((response) => response.json().then((data) => ({ status: response.status, data })))
-    .then(({ status, data }) => {
-      if (status === 200) {
-        return { status: 'success', users: data.users };
-      } else {
-        return { status: 'error', message: data.message };
-      }
-    })
-    .catch((error) => {
-      console.error("Errore durante l'unione alla lobby:", error);
-      return { status: 'error', message: 'Impossibile unirsi alla lobby.' };
-    });
-};
+export const serverUrl = getServerUrl();
+export const api = createClient(serverUrl);

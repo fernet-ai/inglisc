@@ -25,7 +25,6 @@
       "favicon": "./assets/favicon.png"
     },
     "extra": {
-      "SERVER_URL": "https://inglisc-be.onrender.com",
       "eas": {
         "projectId": "62fc4280-e19d-44e1-a33b-82b0a70a7555"
       }
