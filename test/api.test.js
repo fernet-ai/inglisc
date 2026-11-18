@@ -10,13 +10,27 @@ test('frontend API client plays three rounds, rematches and leaves', async () =>
   try {
     const host = await api.create('Ada', 6);
     assert.equal((await api.activeUsers()).activeUsers >= 1, true);
+    assert.equal((await api.coffeeCount()).coffeeCount, 0);
+    assert.equal((await api.offerCoffee()).coffeeCount, 1);
+    assert.equal((await api.coffeeCount()).coffeeCount, 1);
+    assert.equal((await api.openLobbies()).lobbies[0].creatorNickname, 'Ada');
+    assert.equal((await api.openLobbies()).lobbies[0].roundCount, 6);
+    assert.equal((await api.openLobbies()).lobbies[0].participantCount, 1);
+    assert.equal((await api.openLobbies()).lobbies[0].joinable, true);
     const code = host.snapshot.code;
     const bob = await api.join(code.toLowerCase(), 'Bob');
+    assert.equal((await api.openLobbies()).lobbies[0].participantCount, 2);
     const cat = await api.join(code, 'Cat');
+    assert.equal((await api.openLobbies()).lobbies[0].participantCount, 3);
+    assert.equal((await api.openLobbies()).lobbies[0].joinable, false);
     const players = [host, bob, cat].map(p => ({ token: p.token, code, id: p.playerId }));
     await assert.rejects(api.join(code, 'Dan'), { code: 'ROOM_FULL' });
     assert.equal(host.snapshot.roundCount, 6);
     await api.action(players[0], 'start');
+    const playingLobby = (await api.openLobbies()).lobbies[0];
+    assert.equal(playingLobby.isInProgress, true);
+    assert.equal(playingLobby.joinable, false);
+    assert.deepEqual(playingLobby.participantNames, ['Ada', 'Bob', 'Cat']);
     for (let round = 0; round < 6; round++) {
       const master = players[round % 3];
       const guessers = players.filter(p => p !== master);

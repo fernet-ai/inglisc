@@ -43,6 +43,9 @@ function createClient(baseUrl) {
     snapshot: (session, signal) => request(path(session.code), { token: session.token, signal }),
     action: (session, action, body = {}) => request(`${path(session.code)}/${action}`, { token: session.token, body }),
     activeUsers: () => request('/active'),
+    openLobbies: () => request('/lobbies'),
+    coffeeCount: () => request('/coffee'),
+    offerCoffee: () => request('/coffee', { body: {} }),
   };
 }
 module.exports = { createClient };

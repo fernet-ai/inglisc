@@ -17,6 +17,8 @@ export default function useGame() {
   const [memo, setMemo] = useState([]);
   const [secret, setSecret] = useState(null);
   const [activeUsers, setActiveUsers] = useState(0);
+  const [coffeeCount, setCoffeeCount] = useState(0);
+  const [openLobbies, setOpenLobbies] = useState([]);
   const lock = useRef(false);
   const poll = useRef(null);
   const current = useRef(null);
@@ -52,6 +54,38 @@ export default function useGame() {
       finally { if (live) setReady(true); }
     })();
     return () => { live = false; };
+  }, []);
+
+  useEffect(() => {
+    let stopped = false;
+    let timer;
+    let active = AppState.currentState === 'active';
+
+    async function tick() {
+      if (stopped || !active) return;
+      try {
+        const [coffeeResult, lobbiesResult] = await Promise.allSettled([api.coffeeCount(), api.openLobbies()]);
+        if (!stopped && coffeeResult.status === 'fulfilled' && Number.isInteger(coffeeResult.value.coffeeCount)) setCoffeeCount(coffeeResult.value.coffeeCount);
+        if (!stopped && lobbiesResult.status === 'fulfilled' && Array.isArray(lobbiesResult.value.lobbies)) setOpenLobbies(lobbiesResult.value.lobbies);
+      } catch {}
+      if (!stopped && active) timer = setTimeout(tick, 5000);
+    }
+
+    const sub = AppState.addEventListener('change', state => {
+      active = state === 'active';
+      clearTimeout(timer);
+      if (active) tick();
+    });
+    tick();
+    return () => { stopped = true; clearTimeout(timer); sub.remove(); };
+  }, []);
+
+  const offerCoffee = useCallback(async () => {
+    try {
+      const data = await api.offerCoffee();
+      if (Number.isInteger(data.coffeeCount)) setCoffeeCount(data.coffeeCount);
+      return data.coffeeCount;
+    } catch { return null; }
   }, []);
 
   const lost = useCallback(async (e) => {
@@ -182,5 +216,5 @@ export default function useGame() {
     if (!memo.some(w => w.prompt === result.prompt && w.text === text)) updateMemo([{ prompt: result.prompt, text }, ...memo]);
   };
   const retry = () => run(async () => { await refresh(current.current); return true; });
-  return { session, snapshot, ready, busy: busy || uncertain, error, setError, enter, action, forget, refresh: retry, memo, saveWord, removeWord: index => updateMemo(memo.filter((_, i) => i !== index)), secret, activeUsers };
+  return { session, snapshot, ready, busy: busy || uncertain, error, setError, enter, action, forget, refresh: retry, memo, saveWord, removeWord: index => updateMemo(memo.filter((_, i) => i !== index)), secret, activeUsers, coffeeCount, offerCoffee, openLobbies };
 }
