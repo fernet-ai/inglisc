@@ -1,61 +1,10 @@
 // Suggestions stay on the wordmaster's device until the normal setup is submitted.
-const WORDS = {
-  facile: [
-  ['gatto', 'cat'], ['cane', 'dog'], ['cavallo', 'horse'], ['coniglio', 'rabbit'],
-  ['farfalla', 'butterfly'], ['formica', 'ant'], ['ape', 'bee'], ['gufo', 'owl'],
-  ['volpe', 'fox'], ['scoiattolo', 'squirrel'], ['tartaruga', 'turtle'], ['balena', 'whale'],
-  ['delfino', 'dolphin'], ['pesce', 'fish'], ['rana', 'frog'], ['pecora', 'sheep'],
-  ['mucca', 'cow'], ['gallina', 'hen'], ['anatra', 'duck'], ['maiale', 'pig'],
-  ['mela', 'apple'], ['pera', 'pear'], ['fragola', 'strawberry'], ['ciliegia', 'cherry'],
-  ['pesca', 'peach'], ['limone', 'lemon'], ['arancia', 'orange'], ['uva', 'grapes'],
-  ['carota', 'carrot'], ['patata', 'potato'], ['pomodoro', 'tomato'], ['cipolla', 'onion'],
-  ['pane', 'bread'], ['formaggio', 'cheese'], ['burro', 'butter'], ['latte', 'milk'],
-  ['acqua', 'water'], ['zucchero', 'sugar'], ['sale', 'salt'], ['miele', 'honey'],
-  ['casa', 'house'], ['finestra', 'window'], ['porta', 'door'], ['tavolo', 'table'],
-  ['sedia', 'chair'], ['letto', 'bed'], ['cuscino', 'pillow'], ['specchio', 'mirror'],
-  ['cucchiaio', 'spoon'], ['forchetta', 'fork'], ['coltello', 'knife'], ['bicchiere', 'glass'],
-  ['libro', 'book'], ['matita', 'pencil'], ['penna', 'pen'], ['quaderno', 'notebook'],
-  ['zaino', 'backpack'], ['orologio', 'clock'], ['chiave', 'key'], ['ombrello', 'umbrella'],
-  ['scarpa', 'shoe'], ['cappello', 'hat'], ['camicia', 'shirt'], ['giacca', 'jacket'],
-  ['montagna', 'mountain'], ['collina', 'hill'], ['fiume', 'river'], ['lago', 'lake'],
-  ['mare', 'sea'], ['isola', 'island'], ['spiaggia', 'beach'], ['foresta', 'forest'],
-  ['albero', 'tree'], ['fiore', 'flower'], ['foglia', 'leaf'], ['radice', 'root'],
-  ['sole', 'sun'], ['luna', 'moon'], ['stella', 'star'], ['nuvola', 'cloud'],
-  ['pioggia', 'rain'], ['neve', 'snow'], ['vento', 'wind'], ['arcobaleno', 'rainbow'],
-  ['treno', 'train'], ['aereo', 'airplane'], ['bicicletta', 'bicycle'], ['nave', 'ship'],
-  ['strada', 'road'], ['ponte', 'bridge'], ['giardino', 'garden'], ['castello', 'castle'],
-  ['cuore', 'heart'], ['sorriso', 'smile'], ['sogno', 'dream'], ['regalo', 'gift'],
-  ['musica', 'music'], ['canzone', 'song'], ['colore', 'color'], ['ombra', 'shadow'],
-  ],
-  medio: [
-    ['pipistrello', 'bat'], ['riccio', 'hedgehog'], ['lontra', 'otter'], ['gabbiano', 'seagull'],
-    ['bruco', 'caterpillar'], ['coccinella', 'ladybug'], ['zanzara', 'mosquito'], ['ragno', 'spider'],
-    ['ghianda', 'acorn'], ['cespuglio', 'bush'], ['fungo', 'mushroom'], ['rugiada', 'dew'],
-    ['fulmine', 'lightning'], ['tuono', 'thunder'], ['grandine', 'hail'], ['nebbia', 'fog'],
-    ['cascata', 'waterfall'], ['scogliera', 'cliff'], ['sentiero', 'path'], ['deserto', 'desert'],
-    ['soffitta', 'attic'], ['cantina', 'cellar'], ['tetto', 'roof'], ['camino', 'fireplace'],
-    ['cassetto', 'drawer'], ['scaffale', 'shelf'], ['coperta', 'blanket'], ['asciugamano', 'towel'],
-    ['imbuto', 'funnel'], ['setaccio', 'sieve'], ['secchio', 'bucket'], ['scopa', 'broom'],
-    ['ago', 'needle'], ['filo', 'thread'], ['tessuto', 'fabric'], ['bottoniera', 'buttonhole'],
-    ['valigia', 'suitcase'], ['biglietto', 'ticket'], ['incrocio', 'crossroads'], ['marciapiede', 'sidewalk'],
-    ['traguardo', 'finish line'], ['affollato', 'crowded'], ['scivoloso', 'slippery'], ['coraggioso', 'brave'],
-    ['risparmiare', 'save'], ['sussurrare', 'whisper'], ['scoprire', 'discover'], ['raccogliere', 'gather'],
-  ],
-  difficile: [
-    ['tasso', 'badger'], ['donnola', 'weasel'], ['martin pescatore', 'kingfisher'], ['lucciola', 'firefly'],
-    ['libellula', 'dragonfly'], ['girino', 'tadpole'], ['lombrico', 'earthworm'], ['istrice', 'porcupine'],
-    ['agrifoglio', 'holly'], ['vischio', 'mistletoe'], ['edera', 'ivy'], ['ortica', 'nettle'],
-    ['corteccia', 'bark'], ['ramoscello', 'twig'], ['polline', 'pollen'], ['germoglio', 'sprout'],
-    ['brina', 'frost'], ['ragnatela', 'cobweb'], ['crepuscolo', 'twilight'], ['aurora', 'dawn'],
-    ['burrone', 'ravine'], ['palude', 'swamp'], ['ciottolo', 'pebble'], ['marea', 'tide'],
-    ['davanzale', 'windowsill'], ['cerniera', 'hinge'], ['chiavistello', 'latch'], ['grondaia', 'gutter'],
-    ['ditale', 'thimble'], ['gomitolo', 'ball of yarn'], ['scalpello', 'chisel'], ['mestolo', 'ladle'],
-    ['truciolo', 'wood shaving'], ['scheggia', 'splinter'], ['fuliggine', 'soot'], ['ruggine', 'rust'],
-    ['sbadiglio', 'yawn'], ['singhiozzo', 'hiccup'], ['brivido', 'shiver'], ['impronta', 'footprint'],
-    ['ostinato', 'stubborn'], ['malizioso', 'mischievous'], ['friabile', 'brittle'], ['sbiadito', 'faded'],
-    ['sgranocchiare', 'munch'], ['inciampare', 'stumble'], ['sbirciare', 'peek'], ['ondeggiare', 'sway'],
-  ],
-};
+const DICTIONARY = require('./it-en-dictionary.json');
+const DIFFICULTIES = ['facile', 'medio', 'difficile'];
+const WORDS = Object.fromEntries(DIFFICULTIES.map(level => [
+  level,
+  DICTIONARY.entries[level].map(({ prompt, translation }) => [prompt, translation]),
+]));
 
 // Shuffle without replacement; at the cycle boundary avoid repeating the last word.
 function createSuggestionPicker(random = Math.random) {
@@ -63,9 +12,9 @@ function createSuggestionPicker(random = Math.random) {
   const last = {};
   return (difficulty = 'facile') => {
     if (!Object.prototype.hasOwnProperty.call(WORDS, difficulty)) throw new RangeError('Difficoltà non valida');
-    const words = WORDS[difficulty];
+    const entries = DICTIONARY.entries[difficulty];
     if (!remaining[difficulty]?.length) {
-      remaining[difficulty] = words.map((_, index) => index);
+      remaining[difficulty] = entries.map((_, index) => index);
       for (let i = remaining[difficulty].length - 1; i > 0; i--) {
         const j = Math.floor(random() * (i + 1));
         [remaining[difficulty][i], remaining[difficulty][j]] = [remaining[difficulty][j], remaining[difficulty][i]];
@@ -76,27 +25,59 @@ function createSuggestionPicker(random = Math.random) {
       }
     }
     last[difficulty] = remaining[difficulty].pop();
-    const [prompt, translation] = words[last[difficulty]];
-    return { prompt, translation };
+    const { prompt, translation, synonyms, sense, pos } = entries[last[difficulty]];
+    return { prompt, translation, synonyms, sense, pos, difficulty };
   };
 }
 
 const normalize = value => value.normalize('NFKC').trim().toLowerCase();
+const DICTIONARY_TRANSLATIONS = new Map();
+for (const level of DIFFICULTIES) {
+  for (const { prompt, translation } of DICTIONARY.entries[level]) {
+    const key = normalize(prompt);
+    if (!DICTIONARY_TRANSLATIONS.has(key)) DICTIONARY_TRANSLATIONS.set(key, new Set());
+    DICTIONARY_TRANSLATIONS.get(key).add(normalize(translation));
+  }
+}
 
-// Preserve manually entered answers; an unchanged previous suggestion can be reused.
+function isPromptInDictionary(prompt) {
+  return DICTIONARY_TRANSLATIONS.has(normalize(prompt));
+}
+
+function findDictionaryAnswerIndex(prompt, options) {
+  const translations = DICTIONARY_TRANSLATIONS.get(normalize(prompt));
+  if (!translations) return null;
+  const matches = options.flatMap((option, index) => translations.has(normalize(option)) ? [index] : []);
+  return matches.length === 1 ? matches[0] : null;
+}
+
+function pickDistractors(suggestion, random) {
+  const difficulty = DIFFICULTIES.includes(suggestion.difficulty) ? suggestion.difficulty : 'facile';
+  const translations = new Map();
+  for (const entry of DICTIONARY.entries[difficulty]) {
+    const translation = entry.translation.trim();
+    const key = normalize(translation);
+    if (key && key !== normalize(suggestion.translation) && !translations.has(key)) translations.set(key, translation);
+  }
+  const candidates = [...translations.values()];
+  return Array.from({ length: 4 }, () => candidates.splice(Math.min(candidates.length - 1, Math.floor(random() * candidates.length)), 1)[0]);
+}
+
 function applySuggestion(form, suggestion, random = Math.random) {
-  const options = [...form.options];
-  const previous = form.suggested;
-  const reusable = previous && options[previous.index] === previous.translation ? previous.index : null;
-  const matching = options.map((value, index) => normalize(value) === normalize(suggestion.translation) ? index : -1).filter(index => index !== -1);
-  const available = options.map((value, index) => !value.trim() || index === reusable ? index : -1).filter(index => index !== -1);
-  const candidates = matching.length ? matching : available.length ? available : options.map((_, index) => index);
-  const correct = candidates[Math.floor(random() * candidates.length)];
-  const replacedOption = options[correct] && correct !== reusable && normalize(options[correct]) !== normalize(suggestion.translation);
-  if (reusable !== null && reusable !== correct) options[reusable] = '';
+  const correct = Math.floor(random() * 5);
+  const options = Array(5);
   options[correct] = suggestion.translation;
+  const distractors = pickDistractors(suggestion, random);
+  let distractorIndex = 0;
+  for (let index = 0; index < options.length; index++) {
+    if (index !== correct) options[index] = distractors[distractorIndex++];
+  }
+  const replacedOption = !form.suggested && (
+    (form.prompt.trim() && normalize(form.prompt) !== normalize(suggestion.prompt)) ||
+    form.options.some((option, index) => option.trim() && normalize(option) !== normalize(options[index]))
+  );
   return {
-    form: { prompt: suggestion.prompt, options, correct, suggested: { index: correct, translation: suggestion.translation } },
+    form: { prompt: suggestion.prompt, options, correct, suggested: { index: correct, translation: suggestion.translation, synonyms: suggestion.synonyms || [], sense: suggestion.sense || '' } },
     replacedOption: Boolean(replacedOption),
   };
 }
@@ -106,10 +87,13 @@ function updateSetupForm(form, changes) {
   if (form.suggested && (
     ('prompt' in changes && changes.prompt !== form.prompt) ||
     ('correct' in changes && changes.correct !== form.correct) ||
-    ('options' in changes && changes.options[form.suggested.index] !== form.suggested.translation) ||
+    'options' in changes ||
     'suggested' in changes
   )) return form;
-  return { ...form, ...changes };
+  const updated = { ...form, ...changes };
+  const dictionaryAnswer = findDictionaryAnswerIndex(updated.prompt, updated.options);
+  if (dictionaryAnswer !== null) updated.correct = dictionaryAnswer;
+  return updated;
 }
 
-module.exports = { WORDS, createSuggestionPicker, applySuggestion, updateSetupForm };
+module.exports = { WORDS, createSuggestionPicker, applySuggestion, updateSetupForm, isPromptInDictionary, findDictionaryAnswerIndex };

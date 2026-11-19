@@ -8,10 +8,10 @@ import { useAudioPlayer } from 'expo-audio';
 import * as Clipboard from 'expo-clipboard';
 import useGame from './services/useGame';
 import { attachSoundPlayer, playUiSound, setSoundEnabled as setSoundEffectsEnabled } from './services/soundEffects';
-import { applySuggestion, createSuggestionPicker, updateSetupForm } from './services/wordSuggestions';
+import { applySuggestion, createSuggestionPicker, updateSetupForm, isPromptInDictionary, findDictionaryAnswerIndex } from './services/wordSuggestions';
 
-const LIGHT = { ink: '#202340', muted: '#626681', purple: '#5844C5', primary: '#5844C5', pale: '#EDE9FF', cream: '#F8F6F0', yellow: '#FFDF78', heroAccent: '#FFDF78', green: '#D6F2DE', coral: '#FFE4DD', coffee: '#D8B18C', coffeeInk: '#38291F', white: '#FFFFFF', border: '#DFDDE8', field: '#FAF9FC', edge: '#EEECF2', divider: '#F0EFF4', subtle: '#F1F0F5', discarded: '#F2F1F3', errorInk: '#7B2D23', placeholder: '#85879A', success: '#39845B', heroTag: '#DAD3FF', heroText: '#F0EDFF' };
-const DARK = { ink: '#F4F2FA', muted: '#B9BCD0', purple: '#B9AAFF', primary: '#7060D8', pale: '#302B49', cream: '#171720', yellow: '#2D6664', heroAccent: '#BFE6D8', green: '#203C2D', coral: '#482A28', coffee: '#D8B18C', coffeeInk: '#38291F', white: '#23232E', border: '#454554', field: '#2D2D39', edge: '#353541', divider: '#393945', subtle: '#33333F', discarded: '#30303A', errorInk: '#FFB7A9', placeholder: '#A8A9B8', success: '#77D69A', heroTag: '#E1DBFF', heroText: '#F5F2FF' };
+const LIGHT = { ink: '#202340', muted: '#626681', purple: '#5844C5', primary: '#5844C5', pale: '#EDE9FF', cream: '#F8F6F0', yellow: '#FFDF78', heroAccent: '#FFDF78', green: '#D6F2DE', dictionaryFound: '#EAF6EC', dictionaryFoundBorder: '#C2DEC7', dictionaryMissing: '#FFF7DB', dictionaryMissingBorder: '#E6D58A', coral: '#FFE4DD', coffee: '#D8B18C', coffeeInk: '#38291F', white: '#FFFFFF', border: '#DFDDE8', field: '#FAF9FC', edge: '#EEECF2', divider: '#F0EFF4', subtle: '#F1F0F5', discarded: '#F2F1F3', errorInk: '#7B2D23', placeholder: '#85879A', success: '#39845B', heroTag: '#DAD3FF', heroText: '#F0EDFF' };
+const DARK = { ink: '#F4F2FA', muted: '#B9BCD0', purple: '#B9AAFF', primary: '#7060D8', pale: '#302B49', cream: '#171720', yellow: '#2D6664', heroAccent: '#BFE6D8', green: '#203C2D', dictionaryFound: '#24382C', dictionaryFoundBorder: '#3D6248', dictionaryMissing: '#3D3824', dictionaryMissingBorder: '#66582E', coral: '#482A28', coffee: '#D8B18C', coffeeInk: '#38291F', white: '#23232E', border: '#454554', field: '#2D2D39', edge: '#353541', divider: '#393945', subtle: '#33333F', discarded: '#30303A', errorInk: '#FFB7A9', placeholder: '#A8A9B8', success: '#77D69A', heroTag: '#E1DBFF', heroText: '#F5F2FF' };
 let C = LIGHT;
 let s;
 
@@ -31,9 +31,39 @@ function ScreenEntrance({ children }) {
 }
 function Card({ children, style }) { return <View style={[s.card, style]}>{children}</View>; }
 function Label({ children }) { return <Text style={s.label}>{children}</Text>; }
-function Input({ label, ...props }) { return <View style={s.inputWrap}><Label>{label}</Label><TextInput placeholderTextColor={C.placeholder} {...props} accessibilityLabel={label} style={[s.input, props.editable === false && s.inputLocked]} /></View>; }
+function Input({ label, inputStyle, ...props }) { return <View style={s.inputWrap}><Label>{label}</Label><TextInput placeholderTextColor={C.placeholder} {...props} accessibilityLabel={label} style={[s.input, props.editable === false && s.inputLocked, inputStyle]} /></View>; }
 function Heading({ eyebrow, title, subtitle }) { return <View style={s.heading}>{eyebrow && <Text style={s.eyebrow}>{eyebrow}</Text>}<Text accessibilityRole="header" style={s.title}>{title}</Text>{subtitle && <Text style={s.subtitle}>{subtitle}</Text>}</View>; }
 function Notice({ children, color = C.pale }) { return <View accessibilityLiveRegion="polite" style={[s.notice, { backgroundColor: color }]}><Text style={s.noticeText}>{children}</Text></View>; }
+const RARITY_LEVELS = [
+  { value: 'facile', label: 'Comune' },
+  { value: 'medio', label: 'Insolita' },
+  { value: 'difficile', label: 'Rara' },
+];
+function RaritySlider({ value, onChange }) {
+  const [width, setWidth] = useState(0);
+  const index = Math.max(0, RARITY_LEVELS.findIndex(level => level.value === value));
+  const updateFromX = locationX => {
+    if (!width) return;
+    const progress = Math.max(0, Math.min(1, (locationX - 12) / (width - 24)));
+    onChange(RARITY_LEVELS[Math.round(progress * (RARITY_LEVELS.length - 1))].value);
+  };
+  const updateFromAccessibility = actionName => {
+    const nextIndex = Math.max(0, Math.min(RARITY_LEVELS.length - 1, index + (actionName === 'increment' ? 1 : -1)));
+    onChange(RARITY_LEVELS[nextIndex].value);
+  };
+  return <View style={s.rarityPicker}>
+    <View style={s.rarityHeading}><Label>Rarità parola</Label><View style={s.rarityValue}><Text style={s.rarityValueText}>{RARITY_LEVELS[index].label}</Text></View></View>
+    <View accessibilityRole="adjustable" accessibilityLabel="Rarità parola" accessibilityValue={{ min: 0, max: RARITY_LEVELS.length - 1, now: index, text: RARITY_LEVELS[index].label }} accessibilityActions={[{ name: 'increment', label: 'Aumenta rarità' }, { name: 'decrement', label: 'Diminuisci rarità' }]} onAccessibilityAction={event => updateFromAccessibility(event.nativeEvent.actionName)} onLayout={event => setWidth(event.nativeEvent.layout.width)} onStartShouldSetResponder={() => true} onMoveShouldSetResponder={() => true} onResponderGrant={event => updateFromX(event.nativeEvent.locationX)} onResponderMove={event => updateFromX(event.nativeEvent.locationX)} style={s.raritySlider}>
+      <View pointerEvents="none" style={s.rarityRail}>
+        <View style={s.rarityTrack} />
+        <View style={[s.rarityFill, { width: `${index * 50}%` }]} />
+        {RARITY_LEVELS.map((level, stop) => <View key={level.value} style={[s.rarityStop, { left: `${stop * 50}%` }, index >= stop && s.rarityStopActive]} />)}
+        <View style={[s.rarityThumb, { left: `${index * 50}%` }]} />
+      </View>
+    </View>
+    <View style={s.rarityLabels}>{RARITY_LEVELS.map((level, stop) => <Text key={level.value} style={[s.rarityLabel, index === stop && s.rarityLabelActive]}>{level.label}</Text>)}</View>
+  </View>;
+}
 const nameOf = (snap, id) => snap.players.find(p => p.id === id)?.nickname || 'Giocatore';
 const optionOf = (round, id) => round.options.find(o => o.id === id)?.text || '—';
 const nextWordSuggestion = createSuggestionPicker();
@@ -50,6 +80,7 @@ function Home({ game, open, onCoffeeThanks }) {
     void game.offerCoffee();
   };
   const valid = nickname.normalize('NFKC').trim().length > 0 && nickname.normalize('NFKC').trim().length <= 30;
+  const canJoin = valid && code.trim().length === 6 && !game.busy;
   return <View style={s.homeContent}>
     <View style={s.hero}><View style={s.heroTop}><Text style={s.heroTag}>DHE GREITEST GHEIM</Text><Text style={s.heroSpark}>✳</Text></View><Text style={s.heroTitle}>Speak English,{'\n'}play <Text style={{ color: C.heroAccent }}>InGliSc!</Text></Text><Text style={s.heroText}>Tre amici, cinque parole e una sola risposta giusta. Pronti a mettervi alla prova?</Text><View style={s.heroPill}><MaterialCommunityIcons name="account-group-outline" size={17} color={C.ink} /><Text style={s.heroPillText}>3 GIOCATORI  ·  3, 6, 9 O 12 MANCHE</Text></View></View>
     <Card><Heading eyebrow="SI COMINCIA" title="Entra in gioco" subtitle="Scegli un nickname e invita i tuoi amici." />
@@ -63,7 +94,7 @@ function Home({ game, open, onCoffeeThanks }) {
           {expanded && <View style={s.lobbyDetails}><Text style={s.lobbyDetailsLabel}>Partecipanti</Text><Text style={s.lobbyDetailsNames}>{lobby.participantNames.join(' · ')}</Text>{!lobby.joinable && <Text style={s.lobbyUnavailableText}>Questa lobby non accetta altri giocatori.</Text>}</View>}
         </Pressable>;
       })}</View>
-      <Button kind="secondary" title={valid ? 'Entra nella lobby' : 'Inserisci il nickname'} icon="arrow-right" disabled={!valid || code.trim().length !== 6 || game.busy} onDisabledPress={!valid && !game.busy ? () => nicknameInput.current?.focus() : undefined} onPress={() => game.enter(code.trim(), nickname)} />
+      <Button kind={canJoin ? 'primary' : 'secondary'} title={valid ? 'Entra nella lobby' : 'Inserisci il nickname'} icon="arrow-right" disabled={!canJoin} onDisabledPress={!valid && !game.busy ? () => nicknameInput.current?.focus() : undefined} onPress={() => game.enter(code.trim(), nickname)} />
       <View style={s.divider}><View style={s.line} /><Text style={s.dividerText}>OPPURE CREA LOBBY</Text><View style={s.line} /></View>
       <View style={s.roundPicker}><View><Text style={s.label}>Numero di manche</Text><Text style={s.helper}>Puoi scegliere fino a 12 manche.</Text></View><View style={s.roundOptions}>{[3, 6, 9, 12].map(count => <Pressable key={count} accessibilityRole="radio" accessibilityState={{ checked: roundCount === count }} onPress={() => setRoundCount(count)} style={[s.roundOption, roundCount === count && s.roundOptionSelected]}><Text style={[s.roundOptionText, roundCount === count && s.roundOptionTextSelected]}>{count}</Text></Pressable>)}</View></View>
       <Button title="Crea lobby" icon="plus-circle-outline" disabled={!valid || game.busy} onPress={() => game.enter('', nickname, roundCount)} />
@@ -78,41 +109,67 @@ function Home({ game, open, onCoffeeThanks }) {
 
 function Rules() { return <View style={s.rulesPage}><Heading eyebrow="LE REGOLE" title="Piccola guida, grande gioco." subtitle="Tre giocatori e 3, 6, 9 oppure 12 manche: tutti fanno il paroliere a turno." />
   <View style={s.rulesList}>
-    <Card><Text style={s.sectionTitle}>01  Il paroliere prepara</Text><Text style={s.body}>Scrive una parola o indizio in italiano, cinque opzioni inglesi distinte e indica la risposta corretta. È responsabile della traduzione: il gioco non verifica lingua o sinonimia.</Text></Card>
+    <Card><Text style={s.sectionTitle}>01  Il paroliere prepara</Text><Text style={s.body}>Scrive una parola o indizio in italiano, cinque opzioni inglesi distinte e indica la risposta corretta. Il gioco verifica la coppia parola-traduzione nel dizionario Wiktionary; una coppia non verificata limita a 2 i punti del paroliere se nessuno indovina.</Text></Card>
     <Card><Text style={s.sectionTitle}>02  Si sceglie e si scarta</Text><Text style={s.body}>Gli altri due scelgono in segreto, anche la stessa parola. Quando entrambi hanno scelto, le risposte diventano visibili. Il paroliere scarta una parola sbagliata, anche se scelta.</Text></Card>
     <Card><Text style={s.sectionTitle}>03  Conferma la scelta</Text><Text style={s.body}>Conferma la scelta iniziale oppure cambiala una volta. Se è stata scartata devi cambiarla. La conferma è definitiva.</Text></Card>
     <Card><Text style={s.sectionTitle}>04  Punteggi e vittoria</Text><Text style={s.body}>Ogni giocatore guadagna:</Text><View style={s.scoreHint}>
       <View style={s.rulesScoreRow}><View style={s.rulesScoreDescription}><MaterialCommunityIcons name="check-circle-outline" size={19} color={C.success} /><Text style={s.rulesScoreLabel}>Risposta giusta al primo colpo</Text></View><Text style={[s.rulesScorePoints, s.rulesScorePositive]}>+3</Text></View>
       <View style={s.rulesScoreRow}><View style={s.rulesScoreDescription}><MaterialCommunityIcons name="swap-horizontal-circle-outline" size={19} color={C.purple} /><Text style={s.rulesScoreLabel}>Risposta giusta dopo il cambio</Text></View><Text style={[s.rulesScorePoints, s.rulesScoreNeutral]}>+1</Text></View>
       <View style={s.rulesScoreRow}><View style={s.rulesScoreDescription}><MaterialCommunityIcons name="close-circle-outline" size={19} color={C.errorInk} /><Text style={s.rulesScoreLabel}>Risposta sbagliata</Text></View><Text style={[s.rulesScorePoints, s.rulesScoreZero]}>+0</Text></View>
-    </View><Text style={s.body}>Il paroliere prende +3 se nessuno indovina, +1 se solo uno indovina cambiando idea, e 0 negli altri casi. Alla fine delle manche scelte dal creatore vince chi ha più punti: in caso di pareggio, la classifica è condivisa.</Text></Card>
+    </View><Text style={s.body}>Il paroliere guadagna:</Text><View style={s.scoreHint}>
+      <View style={s.rulesScoreRow}><View style={s.rulesScoreDescription}><MaterialCommunityIcons name="check-circle-outline" size={19} color={C.success} /><Text style={s.rulesScoreLabel}>Nessuno indovina, coppia nel dizionario</Text></View><Text style={[s.rulesScorePoints, s.rulesScorePositive]}>+3</Text></View>
+      <View style={s.rulesScoreRow}><View style={s.rulesScoreDescription}><MaterialCommunityIcons name="alert-circle-outline" size={19} color={C.errorInk} /><Text style={s.rulesScoreLabel}>Nessuno indovina, coppia non verificata</Text></View><Text style={[s.rulesScorePoints, s.rulesScoreNeutral]}>+2</Text></View>
+      <View style={s.rulesScoreRow}><View style={s.rulesScoreDescription}><MaterialCommunityIcons name="swap-horizontal-circle-outline" size={19} color={C.purple} /><Text style={s.rulesScoreLabel}>Solo uno indovina cambiando idea</Text></View><Text style={[s.rulesScorePoints, s.rulesScoreNeutral]}>+1</Text></View>
+      <View style={s.rulesScoreRow}><View style={s.rulesScoreDescription}><MaterialCommunityIcons name="close-circle-outline" size={19} color={C.errorInk} /><Text style={s.rulesScoreLabel}>Negli altri casi</Text></View><Text style={[s.rulesScorePoints, s.rulesScoreZero]}>+0</Text></View>
+    </View><Text style={s.body}>Alla fine delle manche scelte dal creatore vince chi ha più punti: in caso di pareggio, la classifica è condivisa.</Text></Card>
   </View>
 </View>; }
 function Memo({ game }) { return <View style={s.memoPage}><Heading eyebrow="LA TUA COLLEZIONE" title="Memo parole" subtitle="Le parole salvate dai risultati restano solo su questo dispositivo." /><Pressable accessibilityRole="button" accessibilityState={{ disabled: true }} accessibilityLabel="Flashcards. Allenati nel memorizzare le parole salvate. Work in progress." disabled style={[s.flashcardsButton, s.flashcardsDisabled]}><View style={s.flashcardsIconWrap}><MaterialCommunityIcons name="cards-outline" size={26} color={C.white} /></View><View style={s.flashcardsCopy}><Text style={s.flashcardsTitle}>Flashcards</Text><Text style={s.flashcardsSubtitle}>Allenati nel memorizzare le parole salvate</Text><Text style={s.flashcardsStatus}>Work in progress 🚧</Text></View><MaterialCommunityIcons name="arrow-right" size={22} color={C.purple} /></Pressable>{game.memo.length === 0 ? <Card><Text style={s.sectionTitle}>Ancora tutto da scrivere ✨</Text><Text style={s.body}>Alla fine di una manche puoi salvare la parola e la sua traduzione qui.</Text></Card> : game.memo.map((w, i) => <Card key={`${w.prompt}-${w.text}-${i}`}><View style={s.rowBetween}><View style={{ flex: 1 }}><Text style={s.word}>{w.prompt}</Text><Text style={s.body}>{w.text}</Text></View><Pressable accessibilityRole="button" accessibilityLabel={`Elimina ${w.prompt} dal memo`} onPress={() => game.removeWord(i)} style={s.iconButton}><MaterialCommunityIcons name="trash-can-outline" size={24} color={C.purple} /></Pressable></View></Card>)}</View>; }
 
 function Setup({ game, snap }) {
   const [form, setForm] = useState({ prompt: '', options: ['', '', '', '', ''], correct: null, suggested: null });
-  const [undo, setUndo] = useState(null);
+  const [replaceConfirmation, setReplaceConfirmation] = useState(false);
   const [difficulty, setDifficulty] = useState('facile');
   const { prompt, options, correct, suggested } = form;
-  const updateForm = changes => { setForm(old => updateSetupForm(old, changes)); setUndo(null); };
+  const promptHasText = Boolean(prompt.normalize('NFKC').trim());
+  const promptInDictionary = Boolean(suggested) || (promptHasText && isPromptInDictionary(prompt));
+  const dictionaryCorrectIndex = suggested ? suggested.index : findDictionaryAnswerIndex(prompt, options);
+  const selectedCorrect = dictionaryCorrectIndex ?? correct;
+  const promptInputStyle = promptHasText ? {
+    backgroundColor: promptInDictionary ? C.dictionaryFound : C.dictionaryMissing,
+    borderColor: promptInDictionary ? C.dictionaryFoundBorder : C.dictionaryMissingBorder,
+  } : null;
+  const updateForm = changes => { setForm(old => updateSetupForm(old, changes)); setReplaceConfirmation(false); };
   const suggest = () => {
     const result = applySuggestion(form, nextWordSuggestion(difficulty));
-    setUndo({ form: undo ? undo.form : form, replacedOption: Boolean(undo?.replacedOption || result.replacedOption) });
     setForm(result.form);
+    setReplaceConfirmation(false);
+  };
+  const generateSuggestion = () => {
+    const hasExistingContent = prompt.trim() || options.some(option => option.trim());
+    if (!suggested && hasExistingContent) setReplaceConfirmation(true);
+    else suggest();
   };
   const normalized = options.map(v => v.normalize('NFKC').trim());
   const duplicateIndexes = normalized.flatMap((value, index) => value && normalized.some((other, otherIndex) => otherIndex !== index && other.toLowerCase() === value.toLowerCase()) ? [index] : []);
-  const valid = prompt.normalize('NFKC').trim().length > 0 && normalized.every(Boolean) && duplicateIndexes.length === 0 && correct !== null;
+  const valid = prompt.normalize('NFKC').trim().length > 0 && normalized.every(Boolean) && duplicateIndexes.length === 0 && selectedCorrect !== null;
   return <Card><Heading eyebrow="TOCCA A TE" title="Prepara la manche" subtitle="Scrivi un indizio in italiano e cinque opzioni inglesi diverse. Seleziona quella giusta: resterà segreta." />
-    <View style={s.suggestionPanel}><View style={s.suggestionHeader}><Label>Livello</Label><View accessibilityRole="radiogroup" style={s.difficultyOptions}>{[['facile', 'Facile'], ['medio', 'Medio'], ['difficile', 'Difficile']].map(([value, label]) => <Pressable key={value} accessibilityRole="radio" accessibilityLabel={`Livello ${label}`} accessibilityState={{ checked: difficulty === value }} onPress={() => setDifficulty(value)} style={[s.difficultyOption, difficulty === value && s.difficultyOptionSelected]}><Text style={[s.difficultyText, difficulty === value && s.difficultyTextSelected]}>{label}</Text></Pressable>)}</View></View><View style={s.suggestionButton}><Button kind="secondary" title="Suggerimento" icon="creation" onPress={suggest} /></View></View>
-    <Text style={s.helper}>Premi Suggerimento per una nuova parola e la sua traduzione. Completa tu le altre opzioni!</Text>
-    {undo && <><Notice>{undo.replacedOption ? 'Il suggerimento ha sostituito una delle opzioni già scritte.' : 'Puoi cambiare suggerimento o ripristinare i dati precedenti.'}</Notice><Button kind="light" title="Annulla suggerimento" icon="undo" onPress={() => { setForm(undo.form); setUndo(null); }} /></>}
-    {suggested && <><Text style={s.helper}>La parola e la risposta corretta sono bloccate. Completa le altre quattro opzioni oppure passa alla compilazione manuale.</Text><Button kind="light" title="Passa alla compilazione manuale" icon="pencil-outline" onPress={() => { setForm(old => ({ ...old, suggested: null })); setUndo(null); }} /></>}
-    <Input label="Parola o indizio italiano" placeholder="Es. gatto" value={prompt} editable={!suggested} onChangeText={v => updateForm({ prompt: v })} maxLength={120} />
-    {options.map((value, i) => <View key={i} style={s.setupRow}><View style={{ flex: 1 }}><Input label={`Opzione ${i + 1}${suggested?.index === i ? ' · corretta (bloccata)' : ''}${duplicateIndexes.includes(i) ? ' · duplicata' : ''}`} placeholder="Parola inglese" value={value} editable={suggested?.index !== i} onChangeText={v => updateForm({ options: options.map((x, n) => n === i ? v : x) })} /></View><Pressable accessibilityRole="radio" accessibilityLabel={`Opzione ${i + 1} corretta`} accessibilityState={{ checked: correct === i, disabled: !!suggested }} disabled={!!suggested} onPress={() => updateForm({ correct: i })} style={[s.radio, correct === i && s.radioOn]}><MaterialCommunityIcons name={correct === i ? 'check' : 'check-outline'} size={21} color={correct === i ? 'white' : C.muted} /></Pressable></View>)}
+    <View style={s.suggestionPanel}><RaritySlider value={difficulty} onChange={setDifficulty} /><View style={s.suggestionButton}><Button kind="secondary" title="Genera suggerimento" icon="creation" onPress={generateSuggestion} /></View></View>
+    <Text style={s.helper}>Il suggerimento genera la parola e tutte e cinque le opzioni. Passa alla compilazione manuale per modificarle.</Text>
+    <Text style={s.helper}>Dati da Wiktionary tramite Kaikki.org/Wiktextract, licenza CC BY-SA 4.0.</Text>
+    {replaceConfirmation && <><Notice color={C.coral}>La nuova generazione sostituirà la parola e le opzioni già compilate.</Notice><View style={{ gap: 6 }}><Button kind="light" title="Mantieni la compilazione" icon="close" onPress={() => setReplaceConfirmation(false)} /><Button title="Sostituisci e genera" icon="creation" onPress={suggest} /></View></>}
+    {suggested && <><Text style={s.helper}>Parola e opzioni generate sono bloccate. Passa alla compilazione manuale per rivederle e modificarle.</Text>{suggested.synonyms.length > 0 && <Text style={s.helper}>Possibili sinonimi: {suggested.synonyms.join(', ')}. Verifica che il significato sia adatto.</Text>}<Button kind="light" title="Passa alla compilazione manuale" icon="pencil-outline" onPress={() => { setForm(old => ({ ...old, suggested: null })); setReplaceConfirmation(false); }} /></>}
+    <Input label="Parola o indizio italiano" placeholder="Es. gatto" value={prompt} editable={!suggested} onChangeText={v => updateForm({ prompt: v })} maxLength={120} inputStyle={promptInputStyle} accessibilityHint={!promptHasText ? undefined : promptInDictionary ? 'Parola presente nel dizionario Wiktionary.' : 'Parola non trovata nel dizionario Wiktionary.'} />
+    {promptHasText && <Text style={s.helper}>{promptInDictionary ? 'Presente nel dizionario Wiktionary.' : 'Non trovata nel dizionario Wiktionary.'}</Text>}
+    {promptHasText && dictionaryCorrectIndex === null && <Notice color={C.dictionaryMissing}>Parola e traduzione corretta non sono entrambe verificate nel dizionario. Se nessuno indovina, il paroliere otterrà al massimo 2 punti.</Notice>}
+    {options.map((value, i) => {
+      const dictionaryCorrect = dictionaryCorrectIndex === i;
+      const lockedCorrect = dictionaryCorrect || suggested?.index === i;
+      const optionInputStyle = lockedCorrect ? { backgroundColor: C.dictionaryFound, borderColor: C.dictionaryFoundBorder } : null;
+      return <View key={i} style={s.setupRow}><View style={{ flex: 1 }}><Input label={`Opzione ${i + 1}${suggested?.index === i ? ' · corretta (bloccata)' : dictionaryCorrect ? ' · corretta dal dizionario (bloccata)' : ''}${duplicateIndexes.includes(i) ? ' · duplicata' : ''}`} placeholder="Parola inglese" value={value} editable={!suggested} onChangeText={v => updateForm({ options: options.map((x, n) => n === i ? v : x) })} inputStyle={optionInputStyle} /></View><Pressable accessibilityRole="radio" accessibilityLabel={`Opzione ${i + 1} corretta`} accessibilityState={{ checked: selectedCorrect === i, disabled: !!suggested || dictionaryCorrectIndex !== null }} disabled={!!suggested || dictionaryCorrectIndex !== null} onPress={() => updateForm({ correct: i })} style={[s.radio, selectedCorrect === i && s.radioOn]}><MaterialCommunityIcons name={selectedCorrect === i ? 'check' : 'check-outline'} size={21} color={selectedCorrect === i ? 'white' : C.muted} /></Pressable></View>;
+    })}
     {duplicateIndexes.length > 0 && <Notice color={C.coral}>Le opzioni {duplicateIndexes.map(index => index + 1).join(', ')} sono uguali. Inserisci parole diverse per continuare.</Notice>}
-    <Text style={s.helper}>{suggested ? '✓ La risposta corretta è selezionata automaticamente.' : '✓ Indica la risposta corretta. Il server non verifica le traduzioni.'}</Text><Button title="Procedi" icon="arrow-right" disabled={!valid || game.busy} onPress={() => game.action('setup', { prompt, options, correctIndex: correct })} />
+    <Text style={s.helper}>{suggested || dictionaryCorrectIndex !== null ? '✓ La risposta corretta è selezionata automaticamente e bloccata.' : '✓ Indica la risposta corretta. Il server non verifica le traduzioni.'}</Text><Button title="Procedi" icon="arrow-right" disabled={!valid || game.busy} onPress={() => game.action('setup', { prompt, options, correctIndex: selectedCorrect })} />
   </Card>;
 }
 
@@ -263,7 +320,7 @@ function buildStyles() {
     setupRow: { flexDirection: 'row', gap: 10, alignItems: 'flex-end' }, radio: { width: 50, height: 50, borderRadius: 14, backgroundColor: C.subtle, alignItems: 'center', justifyContent: 'center' }, radioOn: { backgroundColor: C.primary }, prompt: { backgroundColor: C.yellow, borderRadius: 18, padding: 18, gap: 5 }, promptText: { fontSize: 25, fontWeight: '900', color: C.ink }, option: { minHeight: 62, padding: 12, borderWidth: 1, borderColor: C.border, borderRadius: 15, flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.white }, optionSelected: { backgroundColor: C.pale, borderColor: C.purple, borderWidth: 2 }, optionDiscarded: { backgroundColor: C.discarded, opacity: .65 }, optionLetter: { width: 34, height: 34, borderRadius: 11, backgroundColor: C.pale, alignItems: 'center', justifyContent: 'center' }, optionLetterText: { color: C.purple, fontWeight: '900' }, optionText: { color: C.ink, fontSize: 16, fontWeight: '800' }, optionMeta: { color: C.muted, fontSize: 12, marginTop: 3 }, strike: { textDecorationLine: 'line-through' },
     resultRow: { flexDirection: 'row', alignItems: 'center', gap: 12, borderBottomWidth: 1, borderColor: C.divider, paddingVertical: 10 }, points: { color: C.purple, fontSize: 21, fontWeight: '900' }, scoreRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 }, score: { color: C.purple, fontWeight: '900', fontSize: 16 }, rankRow: { flexDirection: 'row', alignItems: 'center', gap: 16, borderBottomWidth: 1, borderColor: C.divider, paddingVertical: 12 }, rank: { color: C.purple, fontWeight: '900', fontSize: 23, width: 42 }, word: { fontSize: 19, fontWeight: '900', color: C.ink }, iconButton: { width: 48, height: 48, justifyContent: 'center', alignItems: 'center' },
     roundPicker: { gap: 10 }, roundOptions: { flexDirection: 'row', gap: 8 }, roundOption: { flex: 1, minHeight: 48, borderRadius: 13, borderWidth: 1, borderColor: C.border, backgroundColor: C.field, alignItems: 'center', justifyContent: 'center' }, roundOptionSelected: { backgroundColor: C.primary, borderColor: C.primary }, roundOptionText: { color: C.ink, fontSize: 16, fontWeight: '900' }, difficultyText: { color: C.ink, fontSize: 14, fontWeight: '800' }, roundOptionTextSelected: { color: 'white' },
-    suggestionPanel: { gap: 8, padding: 10, borderRadius: 16, borderWidth: 1, borderColor: C.edge, backgroundColor: C.field }, suggestionHeader: { flexDirection: 'row', alignItems: 'center', gap: 10 }, difficultyOptions: { flex: 1, flexDirection: 'row', gap: 5 }, difficultyOption: { flex: 1, minHeight: 38, borderRadius: 10, borderWidth: 1, borderColor: C.border, backgroundColor: C.white, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 }, difficultyOptionSelected: { backgroundColor: C.primary, borderColor: C.primary }, difficultyText: { color: C.ink, fontSize: 12, fontWeight: '900', textAlign: 'center' }, difficultyTextSelected: { color: 'white' }, suggestionButton: { width: '100%' },
+    suggestionPanel: { gap: 10, padding: 12, borderRadius: 16, borderWidth: 1, borderColor: C.edge, backgroundColor: C.field }, rarityPicker: { gap: 7 }, rarityHeading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 }, rarityValue: { minWidth: 76, alignItems: 'center', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 5, backgroundColor: C.pale }, rarityValueText: { color: C.purple, fontSize: 12, fontWeight: '900' }, raritySlider: { height: 34, justifyContent: 'center', paddingHorizontal: 12 }, rarityRail: { height: 24, justifyContent: 'center', position: 'relative' }, rarityTrack: { position: 'absolute', left: 0, right: 0, height: 6, borderRadius: 3, backgroundColor: C.border }, rarityFill: { position: 'absolute', left: 0, height: 6, borderRadius: 3, backgroundColor: C.primary }, rarityStop: { position: 'absolute', top: 7, width: 10, height: 10, marginLeft: -5, borderWidth: 2, borderRadius: 5, borderColor: C.muted, backgroundColor: C.white }, rarityStopActive: { borderColor: C.primary, backgroundColor: C.white }, rarityThumb: { position: 'absolute', top: 0, width: 24, height: 24, marginLeft: -12, borderWidth: 3, borderRadius: 12, borderColor: C.primary, backgroundColor: C.white, elevation: 2, shadowColor: '#000000', shadowOpacity: .16, shadowOffset: { width: 0, height: 2 }, shadowRadius: 3 }, rarityLabels: { flexDirection: 'row', justifyContent: 'space-between' }, rarityLabel: { flex: 1, color: C.muted, fontSize: 11, fontWeight: '700', textAlign: 'center' }, rarityLabelActive: { color: C.primary, fontWeight: '900' }, suggestionButton: { width: '100%' },
   });
 }
 s = buildStyles();

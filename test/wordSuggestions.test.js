@@ -1,8 +1,37 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const { WORDS, createSuggestionPicker, applySuggestion, updateSetupForm } = require('../services/wordSuggestions');
+const { WORDS, createSuggestionPicker, applySuggestion, updateSetupForm, isPromptInDictionary, findDictionaryAnswerIndex } = require('../services/wordSuggestions');
+const dictionary = require('../services/it-en-dictionary.json');
 
 const emptyForm = () => ({ prompt: '', options: ['', '', '', '', ''], correct: null, suggested: null });
+
+test('offline dictionary has attribution and valid entries for every difficulty', () => {
+  assert.equal(dictionary.metadata.license, 'CC BY-SA 4.0');
+  assert.match(dictionary.metadata.attribution, /Wiktionary.*contributors/);
+  assert.ok(dictionary.metadata.licenseUrl);
+  const entries = Object.values(dictionary.entries).flat();
+  assert.equal(entries.length, 4500);
+  assert.equal(new Set(entries.map(entry => entry.prompt.normalize('NFKC').toLowerCase())).size, entries.length);
+  assert.ok(entries.some(entry => entry.synonyms.length > 0));
+  assert.ok(entries.every(entry => entry.prompt && entry.translation && Array.isArray(entry.synonyms)));
+});
+
+test('dictionary lookup matches normalized Italian prompts and rejects absent words', () => {
+  const prompt = dictionary.entries.facile[0].prompt;
+  assert.equal(isPromptInDictionary(`  ${prompt.toUpperCase()}  `), true);
+  assert.equal(isPromptInDictionary('parolainventatainesistente'), false);
+});
+
+test('dictionary translation selects and locks its unique matching option', () => {
+  const { prompt, translation } = dictionary.entries.facile[0];
+  const options = ['wrong', translation, 'other', 'another', 'last'];
+  assert.equal(findDictionaryAnswerIndex(prompt, options), 1);
+  assert.equal(findDictionaryAnswerIndex('parolainventatainesistente', options), null);
+  assert.equal(findDictionaryAnswerIndex(prompt, [translation, translation, '', '', '']), null);
+  const form = { prompt, options, correct: 0, suggested: null };
+  assert.equal(updateSetupForm(form, { options }).correct, 1);
+  assert.equal(updateSetupForm({ ...form, correct: 1 }, { correct: 3 }).correct, 1);
+});
 
 test('each difficulty has a distinct shuffled deck without boundary repetitions', () => {
   const allWords = Object.values(WORDS).flat();
@@ -31,54 +60,62 @@ test('switching difficulty preserves each deck and never repeats the preceding s
   assert.notEqual(first.prompt, back.prompt);
 });
 
-test('a suggestion fills any of the five random positions and selects it', () => {
+test('a suggestion generates five distinct options and selects its translation', () => {
   for (let index = 0; index < 5; index++) {
-    const { form, replacedOption } = applySuggestion(emptyForm(), { prompt: 'gatto', translation: 'cat' }, () => (index + 0.1) / 5);
+    const { form, replacedOption } = applySuggestion(emptyForm(), { prompt: 'gatto', translation: 'cat', difficulty: 'facile' }, () => (index + 0.1) / 5);
     assert.equal(form.prompt, 'gatto');
     assert.equal(form.correct, index);
     assert.equal(form.options[index], 'cat');
-    assert.equal(form.options.filter(Boolean).length, 1);
+    assert.equal(form.options.length, 5);
+    assert.ok(form.options.every(Boolean));
+    assert.equal(new Set(form.options.map(value => value.normalize('NFKC').trim().toLowerCase())).size, 5);
+    const levelTranslations = new Set(WORDS.facile.map(([, translation]) => translation.normalize('NFKC').trim().toLowerCase()));
+    assert.ok(form.options.every((option, optionIndex) => optionIndex === index || levelTranslations.has(option.normalize('NFKC').trim().toLowerCase())));
     assert.equal(replacedOption, false);
   }
 });
 
-test('changing suggestion preserves manual answers and removes the old unedited suggestion', () => {
+test('changing suggestion generates a fresh set of options without mutating the previous form', () => {
   const first = applySuggestion(emptyForm(), { prompt: 'gatto', translation: 'cat' }, () => 0).form;
-  first.options[2] = 'dog';
   const next = applySuggestion(first, { prompt: 'casa', translation: 'house' }, () => 0.9).form;
-  assert.deepEqual(next.options, ['', '', 'dog', '', 'house']);
+  assert.equal(next.options.filter(Boolean).length, 5);
   assert.equal(next.correct, 4);
+  assert.equal(next.options[next.correct], 'house');
+  assert.equal(new Set(next.options.map(value => value.toLowerCase())).size, 5);
   assert.equal(first.options[0], 'cat');
 });
 
-test('a manually edited suggested answer is preserved and a matching translation is reused', () => {
-  const form = { prompt: 'gatto', options: ['fox', ' HOUSE ', '', '', ''], correct: 0, suggested: { index: 0, translation: 'cat' } };
-  const result = applySuggestion(form, { prompt: 'casa', translation: 'house' }, () => 0);
-  assert.deepEqual(result.form.options, ['fox', 'house', '', '', '']);
-  assert.equal(result.form.correct, 1);
-  assert.equal(result.replacedOption, false);
+test('generating a suggestion replaces existing manual options and can be undone by restoring the source form', () => {
+  const form = { prompt: 'originale', options: ['one', 'two', 'three', 'four', 'five'], correct: 2, suggested: null };
+  const result = applySuggestion(form, { prompt: 'casa', translation: 'house' }, () => 0.4);
+  assert.equal(result.form.options.filter(Boolean).length, 5);
+  assert.equal(result.form.options[result.form.correct], 'house');
+  assert.equal(result.replacedOption, true);
+  assert.deepEqual(form.options, ['one', 'two', 'three', 'four', 'five']);
 });
 
 test('when all options are occupied, replacement is reported and the source remains intact', () => {
   const form = { prompt: 'originale', options: ['one', 'two', 'three', 'four', 'five'], correct: 2, suggested: null };
   const result = applySuggestion(form, { prompt: 'casa', translation: 'house' }, () => 0.4);
-  assert.deepEqual(result.form.options, ['one', 'two', 'house', 'four', 'five']);
-  assert.equal(result.form.correct, 2);
+  assert.equal(result.form.options.filter(Boolean).length, 5);
+  assert.equal(result.form.options[result.form.correct], 'house');
   assert.equal(result.replacedOption, true);
   assert.deepEqual(form.options, ['one', 'two', 'three', 'four', 'five']);
 });
 
-test('suggested prompt, translation and correct selection cannot be edited until manual mode', () => {
+test('dictionary translation remains locked in manual mode until its prompt or option changes', () => {
   const form = applySuggestion(emptyForm(), { prompt: 'gatto', translation: 'cat' }, () => 0).form;
   assert.equal(updateSetupForm(form, { prompt: 'cane' }), form);
   assert.equal(updateSetupForm(form, { correct: 1 }), form);
   assert.equal(updateSetupForm(form, { options: ['dog', '', '', '', ''] }), form);
   assert.equal(updateSetupForm(form, { suggested: null }), form);
-  const edited = updateSetupForm(form, { options: ['cat', 'dog', '', '', ''] });
-  assert.equal(edited.options[1], 'dog');
-  assert.equal(edited.correct, 0);
-  const manual = { ...edited, suggested: null };
-  assert.equal(updateSetupForm(manual, { correct: 1 }).correct, 1);
-  assert.equal(updateSetupForm(manual, { prompt: 'cane' }).prompt, 'cane');
-  assert.equal(updateSetupForm(manual, { options: ['fox', 'dog', '', '', ''] }).options[0], 'fox');
+  const manual = { ...form, suggested: null };
+  const changedOptions = updateSetupForm(manual, { options: ['fox', 'dog', 'bird', 'fish', 'horse'] });
+  assert.equal(changedOptions.options[0], 'fox');
+  const changedCorrect = updateSetupForm(manual, { correct: 1 });
+  assert.equal(changedCorrect.correct, 0);
+  const changedPrompt = updateSetupForm(manual, { prompt: 'cane' });
+  assert.equal(changedPrompt.prompt, 'cane');
+  const unlocked = updateSetupForm(changedPrompt, { correct: 1 });
+  assert.equal(unlocked.correct, 1);
 });

@@ -39,9 +39,9 @@ InGliSc è un'app Expo/React Native per Android e Web dedicata a tre giocatori. 
 - Risposta corretta senza cambio: **+3 punti**
 - Risposta corretta dopo il cambio: **+1 punto**
 - Risposta sbagliata: **0 punti**
-- Il paroliere ottiene +3 se nessuno indovina, +1 se uno solo indovina cambiando idea, altrimenti 0.
+- Il paroliere ottiene +3 se nessuno indovina e la coppia parola-traduzione è nel dizionario, +2 se la coppia non è verificata, +1 se uno solo indovina cambiando idea, altrimenti 0.
 
-La traduzione e la correttezza delle sinonimie sono responsabilità del paroliere: il server non valida il significato delle parole.
+Il server verifica la presenza esatta della coppia parola-traduzione nel dizionario, ma non valuta il senso specifico dell'indizio.
 
 ## Avvio rapido
 
