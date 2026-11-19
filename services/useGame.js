@@ -12,6 +12,7 @@ export default function useGame() {
   const [snapshot, setSnapshot] = useState(null);
   const [ready, setReady] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [serverWaking, setServerWaking] = useState(false);
   const [error, setError] = useState('');
   const [uncertain, setUncertain] = useState(false);
   const [memo, setMemo] = useState([]);
@@ -23,6 +24,16 @@ export default function useGame() {
   const poll = useRef(null);
   const current = useRef(null);
   const revision = useRef(-1);
+
+  useEffect(() => {
+    let timer;
+    const unsubscribe = api.subscribeWake(waking => {
+      clearTimeout(timer);
+      if (waking) timer = setTimeout(() => setServerWaking(true), 350);
+      else setServerWaking(false);
+    });
+    return () => { clearTimeout(timer); unsubscribe(); };
+  }, []);
 
   const apply = useCallback((value) => {
     if (value && value.rev >= revision.current) {
@@ -171,7 +182,7 @@ export default function useGame() {
         if (e.code === 'NETWORK' && current.current) setUncertain(true);
         setError(`${e.message}${e.code === 'NETWORK' ? ' L’azione potrebbe essere stata ricevuta: verifica lo stato prima di riprovare.' : ''}`);
         const s = current.current;
-        if (s && s.url === serverUrl) {
+        if (s && s.url === serverUrl && e.code !== 'SERVER_UNAVAILABLE') {
           try { const data = await api.snapshot(s); if (current.current === s) { apply(data.snapshot); setUncertain(false); } } catch (refreshError) { await lost(refreshError); }
         }
       }
@@ -216,5 +227,5 @@ export default function useGame() {
     if (!memo.some(w => w.prompt === result.prompt && w.text === text)) updateMemo([{ prompt: result.prompt, text }, ...memo]);
   };
   const retry = () => run(async () => { await refresh(current.current); return true; });
-  return { session, snapshot, ready, busy: busy || uncertain, error, setError, enter, action, forget, refresh: retry, memo, saveWord, removeWord: index => updateMemo(memo.filter((_, i) => i !== index)), secret, activeUsers, coffeeCount, offerCoffee, openLobbies };
+  return { session, snapshot, ready, busy: busy || uncertain, serverWaking, error, setError, enter, action, forget, refresh: retry, memo, saveWord, removeWord: index => updateMemo(memo.filter((_, i) => i !== index)), secret, activeUsers, coffeeCount, offerCoffee, openLobbies };
 }

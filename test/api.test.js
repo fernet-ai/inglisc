@@ -72,5 +72,42 @@ test('frontend API client plays three rounds, rematches and leaves', async () =>
 
 test('configuration and network errors do not expose credentials', async () => {
   await assert.rejects(createClient('').create('a'), { code: 'CONFIG' });
-  await assert.rejects(createClient('http://127.0.0.1:1').snapshot({ code: 'ABC234', token: 'secret' }), error => error.code === 'NETWORK' && !error.message.includes('secret'));
+  await assert.rejects(createClient('http://127.0.0.1:1', { healthRetryMs: 0, healthTimeoutMs: 1, healthMaxWaitMs: 1 }).snapshot({ code: 'ABC234', token: 'secret' }), error => error.code === 'SERVER_UNAVAILABLE' && !error.message.includes('secret'));
+});
+
+test('API requests wait for a shared health check and expose the waking state', async () => {
+  const paths = [];
+  const healthHeaders = [];
+  const wakeStates = [];
+  let healthChecks = 0;
+  const client = createClient('https://backend.example', {
+    fetchImpl: async (url, options) => {
+      const path = new URL(url).pathname;
+      paths.push(path);
+      if (path === '/health') {
+        healthHeaders.push(options.headers);
+        healthChecks++;
+        return healthChecks === 1
+          ? { ok: false, status: 503, json: async () => ({}) }
+          : { ok: true, status: 200, json: async () => ({ status: 'ok' }) };
+      }
+      return { ok: true, status: 200, json: async () => ({ lobbies: [] }) };
+    },
+    healthRetryMs: 0,
+    healthTimeoutMs: 100,
+    healthMaxWaitMs: 1000,
+    healthCacheMs: 60000,
+  });
+  const unsubscribe = client.subscribeWake(waking => wakeStates.push(waking));
+
+  const [lobbies, users] = await Promise.all([client.openLobbies(), client.activeUsers()]);
+
+  assert.deepEqual(lobbies.lobbies, []);
+  assert.deepEqual(users.lobbies, []);
+  assert.equal(healthChecks, 2);
+  assert.deepEqual(healthHeaders, [undefined, undefined]);
+  assert.equal(paths.filter(path => path === '/lobbies').length, 1);
+  assert.equal(paths.filter(path => path === '/active').length, 1);
+  assert.deepEqual(wakeStates, [false, true, false]);
+  unsubscribe();
 });
