@@ -32,16 +32,23 @@ function createSuggestionPicker(random = Math.random) {
 
 const normalize = value => value.normalize('NFKC').trim().toLowerCase();
 const DICTIONARY_TRANSLATIONS = new Map();
+const DICTIONARY_SYNONYMS = new Map();
 for (const level of DIFFICULTIES) {
-  for (const { prompt, translation } of DICTIONARY.entries[level]) {
+  for (const { prompt, translation, synonyms } of DICTIONARY.entries[level]) {
     const key = normalize(prompt);
     if (!DICTIONARY_TRANSLATIONS.has(key)) DICTIONARY_TRANSLATIONS.set(key, new Set());
     DICTIONARY_TRANSLATIONS.get(key).add(normalize(translation));
+    if (!DICTIONARY_SYNONYMS.has(key)) DICTIONARY_SYNONYMS.set(key, new Set());
+    for (const synonym of synonyms) DICTIONARY_SYNONYMS.get(key).add(synonym);
   }
 }
 
 function isPromptInDictionary(prompt) {
   return DICTIONARY_TRANSLATIONS.has(normalize(prompt));
+}
+
+function findDictionarySynonyms(prompt) {
+  return [...(DICTIONARY_SYNONYMS.get(normalize(prompt)) || [])];
 }
 
 function findDictionaryAnswerIndex(prompt, options) {
@@ -96,4 +103,4 @@ function updateSetupForm(form, changes) {
   return updated;
 }
 
-module.exports = { WORDS, createSuggestionPicker, applySuggestion, updateSetupForm, isPromptInDictionary, findDictionaryAnswerIndex };
+module.exports = { WORDS, createSuggestionPicker, applySuggestion, updateSetupForm, isPromptInDictionary, findDictionaryAnswerIndex, findDictionarySynonyms };

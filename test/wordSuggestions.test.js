@@ -1,6 +1,6 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const { WORDS, createSuggestionPicker, applySuggestion, updateSetupForm, isPromptInDictionary, findDictionaryAnswerIndex } = require('../services/wordSuggestions');
+const { WORDS, createSuggestionPicker, applySuggestion, updateSetupForm, isPromptInDictionary, findDictionaryAnswerIndex, findDictionarySynonyms } = require('../services/wordSuggestions');
 const dictionary = require('../services/it-en-dictionary.json');
 
 const emptyForm = () => ({ prompt: '', options: ['', '', '', '', ''], correct: null, suggested: null });
@@ -31,6 +31,12 @@ test('dictionary translation selects and locks its unique matching option', () =
   const form = { prompt, options, correct: 0, suggested: null };
   assert.equal(updateSetupForm(form, { options }).correct, 1);
   assert.equal(updateSetupForm({ ...form, correct: 1 }, { correct: 3 }).correct, 1);
+});
+
+test('dictionary lookup returns Italian synonyms for the fake-English generator', () => {
+  const entry = Object.values(dictionary.entries).flat().find(word => word.synonyms.length > 0);
+  assert.ok(findDictionarySynonyms(entry.prompt).some(synonym => entry.synonyms.includes(synonym)));
+  assert.deepEqual(findDictionarySynonyms('parolainventatainesistente'), []);
 });
 
 test('each difficulty has a distinct shuffled deck without boundary repetitions', () => {
