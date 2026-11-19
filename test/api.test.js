@@ -70,6 +70,25 @@ test('frontend API client plays three rounds, rematches and leaves', async () =>
   } finally { await new Promise(resolve => server.close(resolve)); }
 });
 
+test('frontend API host can add and remove lobby bots', async () => {
+  const server = createApp().listen(0, '127.0.0.1');
+  await new Promise(resolve => server.once('listening', resolve));
+  const api = createClient(`http://127.0.0.1:${server.address().port}`);
+  try {
+    const host = await api.create('Ada');
+    const session = { ...host, code: host.snapshot.code };
+    let response = await api.action(session, 'add-bot');
+    const bot = response.snapshot.players.find(player => player.isBot);
+    assert.ok(bot);
+    assert.equal(bot.token, undefined);
+    assert.deepEqual((await api.openLobbies()).lobbies[0].participantNames, ['Ada', `${bot.nickname} (bot)`]);
+    response = await api.action(session, 'set-bot-difficulty', { playerId: bot.id, difficulty: 'difficile' });
+    assert.equal(response.snapshot.players.find(player => player.id === bot.id).botDifficulty, 'difficile');
+    response = await api.action(session, 'remove-bot', { playerId: bot.id });
+    assert.equal(response.snapshot.players.some(player => player.isBot), false);
+  } finally { await new Promise(resolve => server.close(resolve)); }
+});
+
 test('configuration and network errors do not expose credentials', async () => {
   await assert.rejects(createClient('').create('a'), { code: 'CONFIG' });
   await assert.rejects(createClient('http://127.0.0.1:1', { healthRetryMs: 0, healthTimeoutMs: 1, healthMaxWaitMs: 1 }).snapshot({ code: 'ABC234', token: 'secret' }), error => error.code === 'SERVER_UNAVAILABLE' && !error.message.includes('secret'));

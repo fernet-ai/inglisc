@@ -1,6 +1,7 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { WORDS, createSuggestionPicker, applySuggestion, updateSetupForm, isPromptInDictionary, findDictionaryAnswerIndex, findDictionarySynonyms } = require('../services/wordSuggestions');
+const { generateFakeEnglishCandidates } = require('../services/fakeEnglishGenerator');
 const dictionary = require('../services/it-en-dictionary.json');
 
 const emptyForm = () => ({ prompt: '', options: ['', '', '', '', ''], correct: null, suggested: null });
@@ -66,9 +67,10 @@ test('switching difficulty preserves each deck and never repeats the preceding s
   assert.notEqual(first.prompt, back.prompt);
 });
 
-test('a suggestion generates five distinct options and selects its translation', () => {
+test('a suggestion mixes two dictionary distractors with two fake-English options', () => {
   for (let index = 0; index < 5; index++) {
-    const { form, replacedOption } = applySuggestion(emptyForm(), { prompt: 'gatto', translation: 'cat', difficulty: 'facile' }, () => (index + 0.1) / 5);
+    const suggestion = { prompt: 'gatto', translation: 'cat', synonyms: ['micio', 'felino'], difficulty: 'facile' };
+    const { form, replacedOption } = applySuggestion(emptyForm(), suggestion, () => (index + 0.1) / 5);
     assert.equal(form.prompt, 'gatto');
     assert.equal(form.correct, index);
     assert.equal(form.options[index], 'cat');
@@ -76,7 +78,10 @@ test('a suggestion generates five distinct options and selects its translation',
     assert.ok(form.options.every(Boolean));
     assert.equal(new Set(form.options.map(value => value.normalize('NFKC').trim().toLowerCase())).size, 5);
     const levelTranslations = new Set(WORDS.facile.map(([, translation]) => translation.normalize('NFKC').trim().toLowerCase()));
-    assert.ok(form.options.every((option, optionIndex) => optionIndex === index || levelTranslations.has(option.normalize('NFKC').trim().toLowerCase())));
+    const fakeCandidates = new Set(generateFakeEnglishCandidates({ prompt: suggestion.prompt, answer: suggestion.translation, synonyms: suggestion.synonyms }));
+    const distractors = form.options.filter((_, optionIndex) => optionIndex !== index);
+    assert.equal(distractors.filter(option => levelTranslations.has(option.normalize('NFKC').trim().toLowerCase())).length, 2);
+    assert.equal(distractors.filter(option => fakeCandidates.has(option)).length, 2);
     assert.equal(replacedOption, false);
   }
 });
@@ -120,8 +125,8 @@ test('dictionary translation remains locked in manual mode until its prompt or o
   assert.equal(changedOptions.options[0], 'fox');
   const changedCorrect = updateSetupForm(manual, { correct: 1 });
   assert.equal(changedCorrect.correct, 0);
-  const changedPrompt = updateSetupForm(manual, { prompt: 'cane' });
-  assert.equal(changedPrompt.prompt, 'cane');
+  const changedPrompt = updateSetupForm(manual, { prompt: 'parolainventatainesistente' });
+  assert.equal(changedPrompt.prompt, 'parolainventatainesistente');
   const unlocked = updateSetupForm(changedPrompt, { correct: 1 });
   assert.equal(unlocked.correct, 1);
 });

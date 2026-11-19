@@ -1,8 +1,9 @@
-const { WORDS } = require('./wordSuggestions');
+const DICTIONARY = require('./it-en-dictionary.json');
+const DIFFICULTIES = ['facile', 'medio', 'difficile'];
 
 const normalize = value => String(value ?? '').normalize('NFKD').replace(/\p{M}/gu, '').trim().toLowerCase();
 const clean = value => normalize(value).replace(/[^a-z]/g, '');
-const ENGLISH_TRANSLATIONS = new Set(Object.values(WORDS).flatMap(words => words.map(([, translation]) => clean(translation))));
+const ENGLISH_TRANSLATIONS = new Set(DIFFICULTIES.flatMap(level => DICTIONARY.entries[level].map(({ translation }) => clean(translation))));
 const SUFFIX_REPLACEMENTS = [
   ['azione', 'ation'], ['itudine', 'itude'], ['zione', 'tion'], ['ità', 'ity'],
   ['ezza', 'essness'], ['anza', 'ance'], ['enza', 'ence'], ['aggio', 'age'],

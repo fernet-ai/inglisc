@@ -1,5 +1,6 @@
 // Suggestions stay on the wordmaster's device until the normal setup is submitted.
 const DICTIONARY = require('./it-en-dictionary.json');
+const { generateFakeEnglishCandidates } = require('./fakeEnglishGenerator');
 const DIFFICULTIES = ['facile', 'medio', 'difficile'];
 const WORDS = Object.fromEntries(DIFFICULTIES.map(level => [
   level,
@@ -58,7 +59,7 @@ function findDictionaryAnswerIndex(prompt, options) {
   return matches.length === 1 ? matches[0] : null;
 }
 
-function pickDistractors(suggestion, random) {
+function pickDistractors(suggestion, random, count = 4) {
   const difficulty = DIFFICULTIES.includes(suggestion.difficulty) ? suggestion.difficulty : 'facile';
   const translations = new Map();
   for (const entry of DICTIONARY.entries[difficulty]) {
@@ -67,14 +68,26 @@ function pickDistractors(suggestion, random) {
     if (key && key !== normalize(suggestion.translation) && !translations.has(key)) translations.set(key, translation);
   }
   const candidates = [...translations.values()];
-  return Array.from({ length: 4 }, () => candidates.splice(Math.min(candidates.length - 1, Math.floor(random() * candidates.length)), 1)[0]);
+  return Array.from({ length: count }, () => candidates.splice(Math.min(candidates.length - 1, Math.floor(random() * candidates.length)), 1)[0]);
+}
+
+function shuffle(items, random) {
+  for (let index = items.length - 1; index > 0; index--) {
+    const other = Math.min(index, Math.floor(random() * (index + 1)));
+    [items[index], items[other]] = [items[other], items[index]];
+  }
+  return items;
 }
 
 function applySuggestion(form, suggestion, random = Math.random) {
   const correct = Math.floor(random() * 5);
   const options = Array(5);
   options[correct] = suggestion.translation;
-  const distractors = pickDistractors(suggestion, random);
+  const fakeCandidates = generateFakeEnglishCandidates({ prompt: suggestion.prompt, answer: suggestion.translation, synonyms: suggestion.synonyms || [] });
+  const fakeCount = Math.min(2, fakeCandidates.length);
+  const fakeDistractors = Array.from({ length: fakeCount }, () => fakeCandidates.splice(Math.min(fakeCandidates.length - 1, Math.floor(random() * fakeCandidates.length)), 1)[0]);
+  const dictionaryDistractors = pickDistractors(suggestion, random, 4 - fakeCount);
+  const distractors = shuffle([...fakeDistractors, ...dictionaryDistractors], random);
   let distractorIndex = 0;
   for (let index = 0; index < options.length; index++) {
     if (index !== correct) options[index] = distractors[distractorIndex++];
