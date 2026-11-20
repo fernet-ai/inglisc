@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "inglisc",
+    "name": "InGliSc!",
     "slug": "inglisc",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -12,7 +12,7 @@
       "backgroundColor": "#F8F6F0"
     },
     "ios": {
-      "supportsTablet": true,
+        "name": "InGliSc!",
       "icon": "./assets/inglisc-icon.png"
     },
     "android": {
