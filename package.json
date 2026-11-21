@@ -11,8 +11,11 @@
     "dev:android": "expo start --android",
     "dev:ios": "expo start --ios",
     "dev:all": "npx concurrently \"cd ../inglisc-be && npm start\" \"npm run dev\"",
+    "test": "node --test test/*.test.js",
     "build:web": "expo export --platform web --output-dir dist",
-    "build:android": "eas build --platform android --profile preview"
+    "build:android": "eas build --platform android --profile preview",
+    "build:android:production": "eas build --platform android --profile production",
+    "submit:android:production": "eas submit --platform android --profile production"
   },
   "dependencies": {
     "@expo-google-fonts/roboto": "^0.4.3",
@@ -21,9 +24,12 @@
     "@react-navigation/native": "^7.5.2",
     "@react-navigation/stack": "^7.12.2",
     "expo": "~58.0.26",
+    "expo-asset": "~58.0.21",
     "expo-audio": "~58.0.12",
     "expo-clipboard": "~58.0.4",
     "expo-file-system": "~58.0.14",
+    "expo-font": "~58.0.12",
+    "expo-splash-screen": "~58.0.14",
     "expo-status-bar": "~58.0.5",
     "react": "19.3.0",
     "react-dom": "19.3.0",
