@@ -12,12 +12,12 @@
     "preview": {
       "distribution": "internal",
       "android": { "buildType": "apk" },
-      "env": { "EXPO_PUBLIC_SERVER_URL": "https://inglisc-be.onrender.com" }
+      "env": { "EXPO_PUBLIC_SERVER_URL": "https://inglisc-be.pierluigi-liguori97.workers.dev" }
     },
     "production": {
       "autoIncrement": true,
       "android": { "buildType": "app-bundle" },
-      "env": { "EXPO_PUBLIC_SERVER_URL": "https://inglisc-be.onrender.com" }
+      "env": { "EXPO_PUBLIC_SERVER_URL": "https://inglisc-be.pierluigi-liguori97.workers.dev" }
     }
   },
   "submit": {

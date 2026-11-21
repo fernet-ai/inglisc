@@ -2,21 +2,13 @@
 
 ## 1. Deploy the backend
 
-1. Create a Render Web Service from the `inglisc-be` repository.
-2. Render configuration:
-   - Runtime: Node
-   - Node version: 22
-   - Build command: `npm install`
-   - Start command: `npm start`
-   - Health check: `/health`
-3. Set these environment variables:
+The backend runs as a Cloudflare Worker with a SQLite-backed Durable Object. Its production URL is:
 
 ```text
-ENVIRONMENT=production
-ALLOWED_ORIGINS=https://your-vercel-domain.vercel.app
+https://inglisc-be.pierluigi-liguori97.workers.dev
 ```
 
-The backend is stored in process memory. One instance is required. A free instance that sleeps may lose every active lobby when it restarts.
+The backend repository already configures `ALLOWED_ORIGINS=https://inglisc.vercel.app`. Its deployment guide is in `inglisc-be/DEPLOYMENT.md`.
 
 ## 2. Configure Vercel
 
@@ -33,10 +25,10 @@ The repository already includes `vercel.json`.
 Set the Vercel environment variable:
 
 ```text
-EXPO_PUBLIC_SERVER_URL=https://your-render-service.onrender.com
+EXPO_PUBLIC_SERVER_URL=https://inglisc-be.pierluigi-liguori97.workers.dev
 ```
 
-Redeploy after changing it.
+Set it for the environments you deploy, then redeploy. The value is compiled into the web bundle.
 
 ## 3. Build the Android preview APK
 
@@ -47,11 +39,7 @@ npm install -g eas-cli
 eas login
 ```
 
-Set the production backend as an EAS environment secret:
-
-```bash
-eas env:create --name EXPO_PUBLIC_SERVER_URL --value https://your-render-service.onrender.com --environment preview
-```
+The `preview` and `production` profiles in `eas.json` already point to the Cloudflare Worker. Build a new APK or AAB after changing the backend URL.
 
 Build:
 
@@ -75,8 +63,8 @@ The production profile creates an Android App Bundle (`AAB`).
 Verify these URLs:
 
 ```text
-https://your-render-service.onrender.com/health
-https://your-vercel-domain.vercel.app
+https://inglisc-be.pierluigi-liguori97.workers.dev/health
+https://inglisc.vercel.app
 ```
 
 On three separate devices:
@@ -90,7 +78,7 @@ On three separate devices:
 
 ## 5. Before public release
 
-- Add PostgreSQL or Redis instead of process memory.
+- Monitor Durable Object storage and partition lobbies if traffic grows.
 - Restrict CORS to exact production origins.
 - Add rate limiting and lobby creation limits.
 - Move auth tokens to SecureStore on native builds.
