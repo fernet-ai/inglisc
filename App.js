@@ -7,6 +7,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAudioPlayer } from 'expo-audio';
 import * as Clipboard from 'expo-clipboard';
 import useGame from './services/useGame';
+import { api } from './services/LobbyService';
 import { attachSoundPlayer, playUiSound, setSoundEnabled as setSoundEffectsEnabled } from './services/soundEffects';
 import { applySuggestion, createSuggestionPicker, updateSetupForm, isPromptInDictionary, findDictionaryAnswerIndex, findDictionarySynonyms } from './services/wordSuggestions';
 import { generateFakeEnglish } from './services/fakeEnglishGenerator';
@@ -74,12 +75,48 @@ const nameOf = (snap, id) => snap.players.find(p => p.id === id)?.nickname || 'G
 const optionOf = (round, id) => round.options.find(o => o.id === id)?.text || '—';
 const nextWordSuggestion = createSuggestionPicker();
 
+function ContactModal({ visible, onClose }) {
+  const [message, setMessage] = useState('');
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(false);
+  const [error, setError] = useState('');
+  const sendingRef = useRef(false);
+  const close = () => {
+    if (sendingRef.current) return;
+    setMessage(''); setError(''); setSent(false); onClose();
+  };
+  const send = async () => {
+    if (sendingRef.current || !message.trim()) return;
+    sendingRef.current = true;
+    setSending(true); setError('');
+    try { await api.sendMessage(message); setSent(true); }
+    catch (failure) { setError(failure.message || 'Non sono riuscito a inviare il messaggio. Riprova.'); }
+    finally { sendingRef.current = false; setSending(false); }
+  };
+  return <Modal transparent visible={visible} animationType="fade" statusBarTranslucent onRequestClose={close}>
+    <KeyboardAvoidingView style={s.contactBackdrop} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={s.contactScroll}>
+        <View accessibilityViewIsModal style={s.contactPanel}>
+          <View style={s.contactTop}><View style={s.contactIcon}><MaterialCommunityIcons name={sent ? 'check' : 'message-text-outline'} size={26} color={C.errorInk} /></View><Pressable accessibilityRole="button" accessibilityLabel="Chiudi" disabled={sending} onPress={close} style={s.contactClose}><MaterialCommunityIcons name="close" size={23} color={C.muted} /></Pressable></View>
+          {sent ? <><Text accessibilityRole="header" style={s.contactTitle}>Messaggio inviato!</Text><Text accessibilityLiveRegion="polite" style={s.subtitle}>Grazie per avermi scritto. A presto!</Text><Button title="Chiudi" onPress={close} /></> : <>
+            <View style={s.contactHeading}><Text style={s.eyebrow}>DUE PAROLE CON FERNET</Text><Text accessibilityRole="header" style={s.contactTitle}>Scrivimi</Text><Text style={s.subtitle}>Un'idea, un suggerimento o qualcosa che non funziona? Sono tutto orecchi.</Text></View>
+            <View style={s.contactField}><Label>Il tuo messaggio</Label><TextInput accessibilityLabel="Il tuo messaggio" multiline maxLength={1000} value={message} onChangeText={value => { setMessage(value); if (error) setError(''); }} editable={!sending} placeholder="Ciao! Volevo dirti che..." placeholderTextColor={C.placeholder} textAlignVertical="top" style={[s.input, s.contactInput]} /><Text style={s.contactCount}>{message.length}/1000</Text></View>
+            {!!error && <Text accessibilityRole="alert" accessibilityLiveRegion="polite" style={s.contactError}>{error}</Text>}
+            <Button title={sending ? 'Invio in corso...' : 'Invia messaggio'} icon="send-outline" disabled={sending || !message.trim()} onPress={send} />
+          </>}
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
+  </Modal>;
+}
+
 function Home({ game, open, onCoffeeThanks }) {
   const nicknameInput = useRef(null);
   const [nickname, setNickname] = useState('');
   const [code, setCode] = useState('');
   const [roundCount, setRoundCount] = useState(3);
   const [expandedLobby, setExpandedLobby] = useState(null);
+  const [contactOpen, setContactOpen] = useState(false);
   const offerCoffee = () => {
     const name = nickname.normalize('NFKC').trim();
     onCoffeeThanks(name ? `Grazie ${name}! ❤️` : 'Grazie! ❤️');
@@ -88,6 +125,7 @@ function Home({ game, open, onCoffeeThanks }) {
   const valid = nickname.normalize('NFKC').trim().length > 0 && nickname.normalize('NFKC').trim().length <= 30;
   const canJoin = valid && code.trim().length === 6 && !game.busy;
   return <View style={s.homeContent}>
+    <ContactModal visible={contactOpen} onClose={() => setContactOpen(false)} />
     <View style={s.hero}><View style={s.heroTop}><Text style={s.heroTag}>DHE GREITEST GHEIM</Text><Text style={s.heroSpark}>✳</Text></View><Text style={s.heroTitle}>Speak English,{'\n'}play <Text style={{ color: C.heroAccent }}>InGliSc!</Text></Text><Text style={s.heroText}>Tre giocatori, cinque parole e una sola risposta giusta. Pronti a mettervi alla prova?</Text><View style={s.heroPill}><MaterialCommunityIcons name="account-group-outline" size={17} color={C.ink} /><Text style={s.heroPillText}>3 GIOCATORI  ·  3, 6, 9 O 12 MANCHE</Text></View></View>
     <Card><Heading eyebrow="SI COMINCIA" title="Entra in gioco" subtitle="Scegli un nickname e completa la squadra con amici o bot." />
       <Input ref={nicknameInput} label="Il tuo nickname" placeholder="Come ti chiami?" value={nickname} onChangeText={setNickname} maxLength={30} autoCapitalize="words" />
@@ -107,7 +145,7 @@ function Home({ game, open, onCoffeeThanks }) {
     </Card>
     <View style={s.quickGrid}>
       <View style={s.quickRow}><Pressable accessibilityRole="button" onPress={() => { void playUiSound('tap'); open('rules'); }} style={s.quick}><Text style={s.quickIcon}>✦</Text><Text style={s.quickTitle}>Come si gioca</Text><Text style={s.quickSub}>Le regole, semplici semplici →</Text></Pressable><Pressable accessibilityRole="button" onPress={() => { void playUiSound('tap'); open('memo'); }} style={[s.quick, { backgroundColor: C.green }]}><Text style={s.quickIcon}>✏️</Text><Text style={s.quickTitle}>Memo parole</Text><Text style={s.quickSub}>La tua collezione →</Text></Pressable></View>
-      <View style={s.quickRow}><View accessibilityLabel="Scrivimi: segnala un bug, suggerimenti, proposte. Work in progress." accessibilityState={{ disabled: true }} style={[s.quick, s.quickDisabled, { backgroundColor: C.coral }]}><View style={s.quickStatusRow}><MaterialCommunityIcons name="bug-outline" size={25} color={C.errorInk} /><Text style={s.quickStatus}>Work in progress 🚧</Text></View><Text style={s.quickTitle}>Scrivimi</Text><Text style={s.quickSub}>Segnala un bug, suggerimenti, proposte</Text></View><Pressable accessibilityRole="button" accessibilityLabel={`Offrimi un caffè, ${game.coffeeCount} caffè offerti`} onPress={() => { void playUiSound('tap'); offerCoffee(); }} style={[s.quick, { backgroundColor: C.coffee }]}><Text style={[s.quickIcon, { color: C.coffeeInk }]}>☕</Text><Text style={[s.quickTitle, { color: C.coffeeInk }]}>Offrimi un caffè</Text><Text style={[s.quickSub, { color: C.coffeeInk }]}><Text style={{ fontWeight: '900' }}>{game.coffeeCount}</Text> caffè offerti</Text></Pressable></View>
+      <View style={s.quickRow}><Pressable accessibilityRole="button" accessibilityLabel="Scrivimi: segnala un bug, suggerimenti o proposte" onPress={() => { void playUiSound('tap'); setContactOpen(true); }} style={[s.quick, { backgroundColor: C.coral }]}><MaterialCommunityIcons name="message-text-outline" size={25} color={C.errorInk} /><Text style={s.quickTitle}>Scrivimi</Text><Text style={s.quickSub}>Segnala un bug, suggerimenti, proposte →</Text></Pressable><Pressable accessibilityRole="button" accessibilityLabel={`Offrimi un caffè, ${game.coffeeCount} caffè offerti`} onPress={() => { void playUiSound('tap'); offerCoffee(); }} style={[s.quick, { backgroundColor: C.coffee }]}><Text style={[s.quickIcon, { color: C.coffeeInk }]}>☕</Text><Text style={[s.quickTitle, { color: C.coffeeInk }]}>Offrimi un caffè</Text><Text style={[s.quickSub, { color: C.coffeeInk }]}><Text style={{ fontWeight: '900' }}>{game.coffeeCount}</Text> caffè offerti</Text></Pressable></View>
     </View>
     <Text style={[s.footnote, s.footerSpacing]}>Made with ❤️ by Fernet</Text>
   </View>;
@@ -366,6 +404,7 @@ export default function App() {
 
 function buildStyles() {
   return StyleSheet.create({
+    contactBackdrop: { flex: 1, backgroundColor: 'rgba(20, 19, 35, 0.6)' }, contactScroll: { flexGrow: 1, justifyContent: 'center', padding: 20 }, contactPanel: { width: '100%', maxWidth: 480, alignSelf: 'center', backgroundColor: C.white, borderRadius: 22, padding: 24, gap: 18, borderWidth: 1, borderColor: C.edge }, contactTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }, contactIcon: { width: 52, height: 52, borderRadius: 16, backgroundColor: C.coral, alignItems: 'center', justifyContent: 'center' }, contactClose: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }, contactHeading: { gap: 7 }, contactTitle: { color: C.ink, fontSize: 26, lineHeight: 32, fontWeight: '900' }, contactField: { gap: 8 }, contactInput: { minHeight: 150, paddingTop: 14 }, contactCount: { color: C.muted, fontSize: 12, textAlign: 'right' }, contactError: { color: C.errorInk, fontSize: 13, lineHeight: 19, fontWeight: '700' },
     coffeeToast: { position: 'absolute', bottom: 24, left: 16, right: 16, alignSelf: 'center', maxWidth: 480, minHeight: 54, borderRadius: 16, backgroundColor: C.ink, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, paddingHorizontal: 18, paddingVertical: 12, elevation: 10, shadowColor: '#000000', shadowOpacity: .2, shadowOffset: { width: 0, height: 4 }, shadowRadius: 12, zIndex: 100 }, coffeeToastText: { color: C.white, fontSize: 15, fontWeight: '800', textAlign: 'center' },
     safe: { flex: 1, backgroundColor: C.cream }, wakeBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.12)', alignItems: 'center', justifyContent: 'center' }, wakeSpinner: { width: 68, height: 68, borderRadius: 18, backgroundColor: C.white, borderWidth: 1, borderColor: C.edge, alignItems: 'center', justifyContent: 'center' }, container: { width: '100%', maxWidth: 720, alignSelf: 'center', paddingHorizontal: 20, paddingBottom: 24, gap: 16 },
     nav: { minHeight: 72, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 }, brand: { flexDirection: 'row', alignItems: 'center', gap: 9 }, brandMark: { width: 36, height: 36, borderRadius: 12, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' }, brandMarkText: { color: C.heroAccent, fontSize: 24, fontWeight: '900' }, brandText: { fontSize: 22, fontWeight: '900', color: C.ink, letterSpacing: -1 }, navRight: { flexDirection: 'row', gap: 4, alignItems: 'center' }, navRightCompact: { gap: 0 }, navButton: { minHeight: 44, minWidth: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, paddingHorizontal: 8 }, navButtonCompact: { minWidth: 40, paddingHorizontal: 4 }, navText: { color: C.purple, fontWeight: '700' }, activeBadge: { height: 32, minWidth: 48, borderRadius: 16, backgroundColor: C.pale, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingHorizontal: 9 }, activeBadgeCompact: { height: 30, minWidth: 42, paddingHorizontal: 7 }, onlineDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: C.success }, activeText: { color: C.ink, fontSize: 13, fontWeight: '900' },

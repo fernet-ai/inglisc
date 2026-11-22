@@ -65,6 +65,7 @@ function createClient(baseUrl, options = {}) {
     ALREADY_SUBMITTED: 'Hai già inviato questa scelta.', NICKNAME_TAKEN: 'Questo nickname è già in uso.',
     ROOM_FULL: 'La lobby è piena.', NEED_THREE_PLAYERS: 'Servono esattamente tre giocatori.',
     FORBIDDEN: 'Questa azione non è consentita al tuo ruolo.', ROOM_NOT_FOUND: 'Lobby non trovata, scaduta oppure codice non valido.',
+    MESSAGES_FULL: 'La casella dei messaggi è piena. Riprova più tardi.',
   };
   async function request(path, { token, body, signal } = {}) {
     if (!/^https?:\/\/(?:[a-z0-9.-]+|\[[a-f0-9:]+\])(?::\d{1,5})?$/i.test(baseUrl)) {
@@ -107,6 +108,7 @@ function createClient(baseUrl, options = {}) {
     openLobbies: () => request('/lobbies'),
     coffeeCount: () => request('/coffee'),
     offerCoffee: () => request('/coffee', { body: {} }),
+    sendMessage: message => request('/messages', { body: { message } }),
     subscribeWake(listener) {
       wakeListeners.add(listener);
       listener(waking);

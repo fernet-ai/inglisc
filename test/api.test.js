@@ -3,6 +3,18 @@ const assert = require('node:assert/strict');
 const { createClient } = require('../services/api');
 const { createApp } = require('../../inglisc-be/server');
 
+test('frontend API sends a message and reports validation errors', async () => {
+  const app = createApp();
+  const server = app.listen(0, '127.0.0.1');
+  await new Promise(resolve => server.once('listening', resolve));
+  const api = createClient(`http://127.0.0.1:${server.address().port}`);
+  try {
+    assert.deepEqual(await api.sendMessage('Ciao!\nUna proposta'), { ok: true });
+    assert.equal(app.locals.store.messages()[0].message, 'Ciao!\nUna proposta');
+    await assert.rejects(api.sendMessage(' '), { code: 'INVALID_INPUT' });
+  } finally { await new Promise(resolve => server.close(resolve)); }
+});
+
 test('frontend API client plays three rounds, rematches and leaves', async () => {
   const server = createApp().listen(0, '127.0.0.1');
   await new Promise(resolve => server.once('listening', resolve));
