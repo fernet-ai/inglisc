@@ -1,119 +1,84 @@
-# InGliSc
-
-> Un piccolo gioco di parole inglesi in compagnia: tre amici, cinque opzioni e una sola risposta da scoprire.
-
-InGliSc è un'app Expo/React Native per Android e Web dedicata a tre giocatori. Una persona crea una lobby privata, condivide il codice e gli amici entrano con nickname diversi. Il creatore sceglie una partita da **3, 6, 9 o 12 manche**; il paroliere ruota e, a ogni manche, i giocatori scelgono, scartano e confermano la loro risposta.
-
 <p align="center">
-  <img src="./assets/inglisc-icon.png" alt="Logo InGliSc i." width="180" />
+  <img src="./assets/inglisc-icon.png" alt="Logo InGliSc" width="120" />
 </p>
 
-## Funzionalità
+<h1 align="center">InGliSc!</h1>
 
-- Lobby privata con codice a 6 caratteri
-- 3 giocatori esatti e nickname univoci
-- Partite da 3, 6, 9 o 12 manche
-- Rotazione del ruolo del paroliere
-- Scelta iniziale segreta e scarto della parola sbagliata
-- Conferma finale con un solo cambio possibile
-- Punteggi, risultati dettagliati e classifica finale
-- Rivincita nella stessa lobby
-- Memo locale delle parole salvate
-- Modalità chiara e scura persistente
-- Suoni sintetici opzionali e animazioni leggere
-- Compatibilità Android, iOS e Web
-- Sessione locale riconnettibile con AsyncStorage
+<p align="center"><strong>Speak English, play InGliSc!</strong><br />
+Un gioco di parole, intuizioni e risposte decisamente sospette.</p>
 
-## Come si gioca
+<p align="center"><a href="https://inglisc.vercel.app"><strong>Gioca a InGliSc!</strong></a></p>
 
-1. Il creatore sceglie il numero di manche, inserisce il nickname e crea la lobby.
-2. Condivide il codice con altri due giocatori.
-3. Al completamento del gruppo, il creatore avvia la partita.
-4. Il paroliere scrive un indizio in italiano e cinque opzioni inglesi distinte.
-5. Gli altri due selezionano una risposta in segreto.
-6. Il paroliere scarta una risposta sbagliata.
-7. Ciascun giocatore conferma la propria risposta finale: può mantenerla o cambiarla una volta.
+---
 
-### Punteggi
+## Il gioco in breve
 
-- Risposta corretta senza cambio: **+3 punti**
-- Risposta corretta dopo il cambio: **+1 punto**
-- Risposta sbagliata: **0 punti**
-- Il paroliere ottiene +3 se nessuno indovina e la coppia parola-traduzione è nel dizionario, +2 se la coppia non è verificata, +1 se uno solo indovina cambiando idea, altrimenti 0.
+Una parola italiana, cinque possibili traduzioni inglesi e una sola risposta giusta. Riuscirai a riconoscerla, oppure ti farai convincere da una parola inventata?
 
-Il server verifica la presenza esatta della coppia parola-traduzione nel dizionario, ma non valuta il senso specifico dell'indizio.
+Si gioca in **tre**, con amici, bot o una combinazione dei due. Ogni giocatore diventa a turno il **paroliere**: prepara la sfida e cerca di mettere in difficoltà gli altri. Una partita dura **3, 6, 9 o 12 manche**, a scelta del creatore della lobby.
 
-## Avvio rapido
+## Si comincia
 
-È necessario utilizzare **Node.js 22** per l'ambiente Expo del progetto.
+1. Scegli un nickname e crea una lobby, indicando quante manche vuoi giocare.
+2. Condividi il codice a sei caratteri con i tuoi amici, oppure aggiungi uno o due bot. Il creatore può scegliere la difficoltà di ciascun bot: facile, medio o difficile.
+3. Per entrare in una lobby, inserisci il codice oppure selezionala tra quelle disponibili nella schermata iniziale.
+4. Quando la squadra è al completo, il creatore può avviare la partita.
 
-```bash
-# Terminale 1: backend
-cd inglisc-be
-npm install
-npm start
+## Come funziona una manche
 
-# Terminale 2: app
-cd inglisc
-npm install
-npm start
-```
+### 1. Il paroliere prepara la sfida
 
-Per aprire direttamente la versione web:
+Il paroliere sceglie una parola o un indizio in italiano, scrive **cinque opzioni inglesi diverse** e indica quella corretta. La risposta rimane segreta agli altri giocatori.
 
-```bash
-npm run web
-```
+Serve ispirazione? Il pulsante **Genera suggerimento** prepara parola e opzioni: puoi scegliere una parola comune, insolita o rara. Per modificarle, passa alla compilazione manuale. Puoi anche generare singole opzioni di finto inglese per rendere la scelta più divertente.
 
-Il frontend predefinito cerca il backend su `http://localhost:3000` nel browser. Per testare su telefonini o altri dispositivi, collegali alla stessa rete Wi-Fi del computer e configura l'indirizzo LAN del backend.
+Il gioco segnala se parola e traduzione sono presenti nel dizionario. Una coppia non verificata può comunque essere usata, ma influisce sul punteggio del paroliere se nessuno indovina.
 
-## Collegamento al backend
+### 2. Gli altri giocatori scelgono
 
-Crea un file `.env` nella cartella `inglisc`:
+I due avversari scelgono ciascuno una risposta **in segreto**. Possono anche scegliere la stessa opzione. Quando entrambi hanno risposto, le loro scelte diventano visibili.
 
-```env
-EXPO_PUBLIC_SERVER_URL=http://192.168.1.53:3000
-```
+### 3. Il paroliere scarta
 
-Sostituisci l'IP con quello del PC che esegue il backend, quindi riavvia Expo cancellando la cache:
+Il paroliere elimina una risposta sbagliata, anche se è stata scelta da uno o entrambi gli avversari. La risposta corretta non può essere scartata.
 
-```bash
-npx expo start --clear
-```
+### 4. La scelta finale
 
-Su Android fisico, `localhost` significa il telefono e non il computer. Su emulatori Android usa normalmente `http://10.0.2.2:3000`. Per una build distribuita serve un'origine raggiungibile e, preferibilmente, HTTPS.
+Ogni avversario conferma la scelta iniziale oppure la cambia una volta. Se la sua risposta è stata scartata, deve sceglierne un'altra. La conferma è definitiva: a quel punto si scopre la soluzione!
 
-Ricorda che il backend usa memoria volatile: riavviarlo cancella tutte le lobby attive.
+## Punteggi
 
-## Script disponibili
+**Per chi indovina:**
 
-```bash
-npm start       # Avvia Metro/Expo
-npm run web     # Avvia l'app Web
-npm run android # Avvia l'app su Android
-npm run ios     # Avvia l'app su iOS
-npm test        # Solo se configurato nel progetto
-```
+| Risultato | Punti |
+| --- | ---: |
+| Risposta giusta mantenendo la prima scelta | +3 |
+| Risposta giusta dopo aver cambiato scelta | +1 |
+| Risposta sbagliata | 0 |
 
-## Verifiche
+**Per il paroliere:**
 
-Con Node 22:
+| Risultato | Punti |
+| --- | ---: |
+| Nessuno indovina e la coppia è nel dizionario | +3 |
+| Nessuno indovina e la coppia non è verificata | +2 |
+| Uno solo indovina, cambiando la propria scelta | +1 |
+| Negli altri casi | 0 |
 
-```bash
-node --test test/api.test.js
-npx expo install --check
-npx expo export --platform web --output-dir /tmp/inglisc-web --max-workers 1
-npx expo export --platform android --output-dir /tmp/inglisc-android --max-workers 1
-```
+Alla fine della partita vince chi ha più punti. In caso di pareggio, la posizione in classifica è condivisa. Vuoi la rivincita? Il creatore può avviarne un'altra nella stessa lobby.
 
-I test frontend avviano un backend temporaneo su una porta casuale e verificano lobby, manche personalizzate, risultati e rivincita senza usare servizi esterni.
+## Le tue parole, a portata di mano
 
-## Identità visiva
+Hai trovato una parola da ricordare? Salvala nel **Memo parole** dai risultati della manche o della partita. La raccolta rimane sul dispositivo utilizzato e puoi eliminare le parole quando vuoi. Le flashcard sono ancora in lavorazione.
 
-Il logo `i.` viola è condiviso tra l'icona app, il favicon e la splash screen Expo. Gli asset si trovano in `assets/` e vengono configurati in `app.json`.
+## Ancora un paio di cose
 
-## Progetto dimostrativo
+- Scegli la modalità chiara o scura e attiva o disattiva i suoni dalla barra in alto.
+- Hai un'idea o hai trovato un problema? Usa **Scrivimi** nella schermata iniziale.
+- Uscire durante una partita la interrompe per tutti e azzera i punteggi.
 
-InGliSc è pensato come gioco locale o su rete privata. Il backend mantiene lobby e sessioni in memoria e non include account, database, chat, matchmaking pubblico o protezioni complete per un deployment pubblico.
+I suggerimenti e le verifiche del dizionario utilizzano dati di [Wiktionary](https://www.wiktionary.org/) tramite [Kaikki.org/Wiktextract](https://kaikki.org/), disponibili con licenza [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/).
 
-Per l'esposizione su Internet servono HTTPS, rate limiting, autenticazione più robusta, storage persistente e policy di sicurezza appropriate.
+---
+
+<p align="center">Made with ❤️ by Fernet</p>
