@@ -69,7 +69,7 @@ Alla fine della partita vince chi ha più punti. In caso di pareggio, la posizio
 
 ## Le tue parole, a portata di mano
 
-Hai trovato una parola da ricordare? Salvala nel **Memo parole** dai risultati della manche o della partita. La raccolta rimane sul dispositivo utilizzato e puoi eliminare le parole quando vuoi. Le flashcard sono ancora in lavorazione.
+Hai trovato una parola da ricordare? Salvala nel **Memo parole** dai risultati della manche o della partita. La raccolta rimane sul dispositivo utilizzato e puoi eliminare le parole quando vuoi. Apri **Flashcards** per allenarti: tocca una carta per rivelare la traduzione, poi indica se la ricordavi o vuoi ripassarla.
 
 ## Ancora un paio di cose
 
